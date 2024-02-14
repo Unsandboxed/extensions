@@ -9,8 +9,6 @@
     throw new Error("Runtime Options extension needs to be run unsandboxed");
   }
 
-  const greenFlagURI =
-    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAMAAADXqc3KAAABFFBMVEUAAACAgABVqlVJkklAn0BNmTNLljxGlzpDmzdFmjpGmzxHmz9Fmj1FmT5Emj1GmT1GmD1EmDxGmTxEmT1GmjxGmT1FmDxEmT5EmTxGmT5FmD1GmT5FmT1Gmj1EmT5FmT1FmT1FmDxGmT1FmjxLs09LtE9Jr0xJsk1Js05JtVBKtU5KtVBKtlBJrkpJsE1KtlFIrEpIsExLt1FLuFJKuVNIqkhLulNIp0VJqkhKtlJLvVRMvFNFmT5GpUVFmT1HpEVHokNMvlVFmT1Ho0NFmTxLvlVGoUFMvlVLvlVGn0BFmT1Nv1ZEmz5FmTxFmTxFmT1NvlZFmz9FmT5FnT9FnD5GnT9Mv1ZMv1ZMv1ZFmT1Mv1b////70P2GAAAAWXRSTlMAAgMHCAoRFhcwMz0/RkdQVGFmaWpxcnh7gIGEhZKZo6eprLq/v8DAwMDAwMDBwcHCwsPDxcbIysrLzM3Pz9DQ1NTV1dfZ29vg4uXm5+jp6ens7fDx9Pv8/nPb5aAAAAABYktHRFt0vJU0AAAAsUlEQVQoz2NgwA3YhNiwS4hHykoou9goCrKiSUhGhqhZe7gbm3rxQwQ4BJihEupRYODooMDFyMAu6uMsgyoRFW5kHxjkqeuhL4cmAQM4JXRwSWjjktDEJaGFS0IVIeFtZuIaAZdQgUmY2/oqyTu5WcEkNGAS/kJMQJrbySAAJBxmGSoIlYAoYGCR8rPVM7QItuNlQJVgYGDlE5MU5kSErhz2+KCihEikNHYJJh5mBhIAADBcR/r5OJzCAAAAAElFTkSuQmCC";
   const TURBO_MODE = "turbo mode";
   const REMOVE_FENCING = "remove fencing";
   const REMOVE_MISC_LIMITS = "remove misc limits";
@@ -22,7 +20,7 @@
 
   /** @param {string} thing */
   const emitChanged = (thing) =>
-    Scratch.vm.runtime.startHats("runtimeoptions_whenChange", {
+    Scratch.vm.runtime.startHats("usbRuntime_whenChange", {
       thing,
     });
 
@@ -64,11 +62,11 @@
     }
   };
 
-  class RuntimeOptions {
+  class Runtime {
     getInfo() {
       return {
         id: "usbRuntime",
-        name: Scratch.translate("Runtime Options"),
+        name: Scratch.translate("Runtime"),
         blocks: [
           {
             opcode: "whenChange",
@@ -385,5 +383,5 @@
     }
   }
 
-  Scratch.extensions.register(new RuntimeOptions());
+  Scratch.extensions.register(new Runtime());
 })(Scratch);
