@@ -1,6 +1,6 @@
-// Name: Mouse Cursor
-// ID: MouseCursor
-// Description: Use custom cursors or hide the cursor. Also allows replacing the cursor with any costume image.
+// Name: Mouse
+// ID: usbMouse
+// Description: Various mouse blocks.
 
 (function (Scratch) {
   "use strict";
@@ -264,17 +264,17 @@
         scrollX = event.deltaX;
         scrollY = event.deltaY;
 
-        Scratch.vm.runtime.startHats("mouse_whenMouseWheel", {
+        Scratch.vm.runtime.startHats("usbMouse_whenMouseWheel", {
           DIRECTION: "any",
         });
         if (scrollY > 0) {
-          Scratch.vm.runtime.startHats("mouse_whenMouseWheel", {
+          Scratch.vm.runtime.startHats("usbMouse_whenMouseWheel", {
             DIRECTION: "down",
           });
           scrollDistance--;
           scrollDistanceDown--;
         } else if (scrollY < 0) {
-          Scratch.vm.runtime.startHats("mouse_whenMouseWheel", {
+          Scratch.vm.runtime.startHats("usbMouse_whenMouseWheel", {
             DIRECTION: "up",
           });
           scrollDistance++;
@@ -331,7 +331,7 @@
 
     getInfo() {
       return {
-        id: "mouse",
+        id: "usbMouse",
         name: Scratch.translate("Mouse"),
         blocks: [
           {
