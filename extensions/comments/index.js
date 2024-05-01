@@ -4,7 +4,7 @@
   class CommentBlocks {
     getInfo() {
       return {
-        id: "lmscomments",
+        id: "comments",
         name: "Comment Blocks",
         color1: "#e4db8c",
         color2: "#c6be79",
@@ -48,6 +48,7 @@
             opcode: "commentReporter",
             blockType: Scratch.BlockType.REPORTER,
             text: "[INPUT] // [COMMENT]",
+            allowDropAnywhere: true,
             arguments: {
               COMMENT: {
                 type: Scratch.ArgumentType.STRING,
@@ -56,20 +57,6 @@
               INPUT: {
                 type: Scratch.ArgumentType.STRING,
                 defaultValue: "",
-              },
-            },
-          },
-          {
-            opcode: "commentBoolean",
-            blockType: Scratch.BlockType.BOOLEAN,
-            text: "[INPUT] // [COMMENT]",
-            arguments: {
-              COMMENT: {
-                type: Scratch.ArgumentType.STRING,
-                defaultValue: "comment",
-              },
-              INPUT: {
-                type: Scratch.ArgumentType.BOOLEAN,
               },
             },
           },
@@ -91,10 +78,6 @@
 
     commentReporter(args) {
       return args.INPUT;
-    }
-
-    commentBoolean(args) {
-      return args.INPUT || false;
     }
   }
   Scratch.extensions.register(new CommentBlocks());
