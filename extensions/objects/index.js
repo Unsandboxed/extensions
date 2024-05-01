@@ -4,7 +4,7 @@
   const cast = Scratch.Util.Cast;
   const clone = Scratch.Util.Clone.structured;
 
-  class ObjectsExtension {
+  class JSONtest {
     constructor() {
     }
 
@@ -255,5 +255,5 @@
     }
   }
 
-  Scratch.extensions.register(new ObjectsExtension());
+  Scratch.extensions.register(new JSONtest());
 })(Scratch);
