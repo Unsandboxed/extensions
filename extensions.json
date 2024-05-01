@@ -1,4 +1,8 @@
 [
   "mouse",
   "runtime",
+  "objects",
+  "arrays",
+  "usbTouch",
+  "comments",
 ]
