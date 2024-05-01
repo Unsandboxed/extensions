@@ -1,6 +1,7 @@
 {
   "name": "Touch Control",
   "description": "Sense interactions on touchscreen devices.",
-  "createdBy": [],
+  "createdBy": ["Skyhigh173"],
   "insetIconColor": null,
+  "license": "MIT",
 }
