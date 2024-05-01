@@ -51,7 +51,7 @@
     getInfo() {
       return {
         id: 'usbTouch',
-        name: 'Touch Controls',
+        name: 'Touch Control',
         color1: '#5CB1D6',
         blocks: [
           {
