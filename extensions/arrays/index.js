@@ -1,9 +1,10 @@
-// UNFINISHED
-
 (function (Scratch) {
   "use strict";
 
-  class JSONtest {
+  const cast = Scratch.Util.Cast;
+  const clone = Scratch.Util.Clone.structured;
+
+  class UnsandboxedArrayBlocks {
     constructor() {
     }
 
@@ -206,23 +207,92 @@
     }
 
     stringToArray(args) {
-      const array = Scratch.Cast.toArray(args.STRING);
-      console.log(array, args.STRING);
+      const array = clone(cast.toArray(args.STRING));
       return array;
     }
 
     concat(args) {
-      const array1 = args.ARRAY1 ?? [];
-      const array2 = args.ARRAY2 ?? [];
+      const array1 = clone(cast.toArray(args.ARRAY1)) ?? [];
+      const array2 = clone(cast.toArray(args.ARRAY2)) ?? [];
 
       return array1.concat(array2);
+    }
+
+    addItem(args) {
+      const array = clone(cast.toArray(args.ARRAY)) ?? [];
+      const item = args.ITEM ?? "";
+
+      array.push(item);
+      return array;
+    }
+
+    deleteItem(args) {
+      const array = clone(cast.toArray(args.ARRAY)) ?? [];
+      const index = this._getIndex(args.INDEX, array.length);
+
+      if (index === "_all_") return [];
+
+      array.splice(index, 1);
+      return array;
+    }
+
+    insertItem(args) {
+      const array = clone(cast.toArray(args.ARRAY)) ?? [];
+      const item = args.ITEM ?? "";
+      const index = this._getIndex(args.INDEX, array.length);
+      
+      array.splice(index, 0, item);
+      return array;
+    }
+
+    replaceItem(args) {
+      const array = clone(cast.toArray(args.ARRAY)) ?? [];
+      const item = args.ITEM ?? "";
+      const index = this._getIndex(args.INDEX, array.length);
+
+      if (typeof array[index] !== "undefined") array[index] = item;
+      return array;
+    }
+
+    itemAtIndex(args) {
+      const array = clone(cast.toArray(args.ARRAY)) ?? [];
+      const index = this._getIndex(args.INDEX, array.length);
+
+      return array[index] ?? "";
+    }
+
+    itemNumber(args) {
+      const array = clone(cast.toArray(args.ARRAY)) ?? [];
+      const item = args.ITEM ?? "";
+
+      return array.indexOf(item);
+    }
+
+    length(args) {
+      const array = clone(cast.toArray(args.ARRAY)) ?? [];
+
+      return array.length;
+    }
+
+    contains(args) {
+      const array = clone(cast.toArray(args.ARRAY)) ?? [];
+      const item = args.ITEM ?? "";
+
+      return array.includes(item);
+    }
+
+    _getIndex(arg, length) {
+      if (arg === "_last_") return length - 1;
+      if (arg === "_random_") return Math.floor(Math.random()*length);
+      if (arg === "_all_") return "_all_";
+      return arg - 1;
     }
 
     stringify(args) {
       try {
         return JSON.stringify(args.JSON)
       } catch (error) {
-        return "{}";
+        return "[]";
       }
     }
 
@@ -230,7 +300,7 @@
       try {
         return JSON.parse(args.STRING)
       } catch (error) {
-        return {};
+        return [];
       }
     }
   }
