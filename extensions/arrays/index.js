@@ -4,7 +4,7 @@
   const cast = Scratch.Util.Cast;
   const clone = Scratch.Util.Clone.structured;
 
-  class UnsandboxedArrayBlocks {
+  class UnsandboxedArraysBlocks {
     constructor() {
     }
 
@@ -305,5 +305,5 @@
     }
   }
 
-  Scratch.extensions.register(new JSONtest());
+  Scratch.extensions.register(new UnsandboxedArraysBlocks());
 })(Scratch);
