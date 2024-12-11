@@ -1,8 +1,8 @@
 (function (Scratch) {
   "use strict";
 
-  const cast = Scratch.Util.Cast;
-  const clone = Scratch.Util.Clone.structured;
+  const cast = Unsandboxed.Util.Cast;
+  const clone = Unsandboxed.Util.Clone.structured;
 
   class UnsandboxedObjectsBlocks {
     constructor() {
