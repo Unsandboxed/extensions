@@ -2,6 +2,7 @@
  * ! UNFINISHED !
  * 
  * TO-DO:
+ * - Do the list blocks
  * - Use variable fields instead of custom menus
  * 
  * BLOCKLY TO-DO:
@@ -15,14 +16,14 @@
 
   /**
    * If you are reading this with the intent of understanding
-   * how dependant dropdowns work, please understand that this
+   * how dependent dropdowns work, please understand that this
    * entire extension is a nightmare to look through.
    *
    * Like most Unsandboxed extension features, there is an
-   * example for dependant dropdowns listed in the "tests"
+   * example for dependent dropdowns listed in the "tests"
    * folder.
    *
-   * With that being said, though, dependant dropdowns are
+   * With that being said, though, dependent dropdowns are
    * still quite involved and not something I'd recommend using
    * if you're not familiar with Blockly or the vm.
    */
@@ -836,6 +837,9 @@
           targetType: {
             acceptReporters: false,
             items: ["parent", "clone", "anything"],
+            onItemSelected: (item) => {
+              console.log(item + " pingus")
+            }
           },
           targetTypePlural: {
             acceptReporters: false,
@@ -1291,7 +1295,7 @@
       }
     }
 
-    // Dependant Dropdowns (eek!)
+    // Dependent Dropdowns (eek!)
 
     _attributeMenuConstructor(target, variablesOnly, type = "") {
       // todo: add stage attributes too
@@ -1383,7 +1387,7 @@
 
     /**
      * In terms of the "thing" dropdown, we don't need to do much either.
-     * All we need to do is define a callback for when items are clicked,
+     * All we need to do is define a callback for when items are clicked
      * and return the correct list of "things".
      */
     targetsMenu(targetId, menuState) {
