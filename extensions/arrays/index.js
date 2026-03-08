@@ -1,8 +1,10 @@
 (function (Scratch) {
   "use strict";
 
-  const cast = Unsandboxed.Util.Cast;
-  const clone = Unsandboxed.Util.Clone.structured;
+  const cast = Scratch.UnsandboxedMod.Cast;
+  const clone = (val) => { 
+    return [...val]
+  };
 
   class UnsandboxedArraysBlocks {
     constructor() {
@@ -26,7 +28,7 @@
             arguments: {
               STRING: {
                 type: Scratch.ArgumentType.STRING,
-                text: "['thing']",
+                defaultValue: `["thing"]`,
               }
             }
           },
@@ -255,7 +257,7 @@
     }
 
     itemAtIndex(args) {
-      const array = clone(cast.toArray(args.ARRAY)) ?? [];
+      const array = cast.toArray(args.ARRAY) ?? [];
       const index = this._getIndex(args.INDEX, array.length);
 
       return array[index] ?? "";
