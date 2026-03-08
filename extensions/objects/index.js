@@ -2,7 +2,9 @@
   "use strict";
 
   const cast = Unsandboxed.Util.Cast;
-  const clone = Unsandboxed.Util.Clone.structured;
+  const clone = (val) => {
+    return {...val}
+  };
 
   class UnsandboxedObjectsBlocks {
     constructor() {
