@@ -1,15 +1,10 @@
-// Name: Mouse
-// ID: usbMouse
-// Description: Various mouse blocks.
+/**
+ * NOTES: unfinished reformat. Doesn't work yet.
+ * Will work when I finished reformatting.
+ */
 
 (function (Scratch) {
   "use strict";
-  
-  const vm = Scratch.vm;
-
-  if (!Scratch.extensions.unsandboxed) {
-    throw new Error("The Mouse extension must be run unsandboxed");
-  }
 
   const lazilyCreatedCanvas = () => {
     /** @type {HTMLCanvasElement} */
@@ -171,51 +166,72 @@
     rect = canvas.getBoundingClientRect();
   });
 
-  const postMouseData = (e, isDown) => {
-    const { movementX, movementY } = e;
-    const { width, height } = rect;
-    const x = mouse._clientX + movementX;
-    const y = mouse._clientY - movementY;
-    mouse._clientX = x;
-    mouse._scratchX = mouse.runtime.stageWidth * (x / width - 0.5);
-    mouse._clientY = y;
-    mouse._scratchY = mouse.runtime.stageWidth * (y / height - 0.5);
-    if (typeof isDown === "boolean") {
-      const data = {
-        button: e.button,
-        isDown,
-      };
-      originalPostIOData(data);
-    }
-  };
-
-  const mouseDevice = vm.runtime.ioDevices.mouse;
-  const originalPostIOData = mouseDevice.postData.bind(mouseDevice);
-  mouseDevice.postData = (data) => {
-    if (!isPointerLockEnabled) {
-      return originalPostIOData(data);
-    }
-  };
-
-  const oldStep = vm.runtime._step;
-  vm.runtime._step = function (...args) {
-    const ret = oldStep.call(this, ...args);
-    if (isPointerLockEnabled) {
-      const { width, height } = rect;
-      mouse._clientX = width / 2;
-      mouse._clientY = height / 2;
-      mouse._scratchX = 0;
-      mouse._scratchY = 0;
-    }
-    return ret;
-  };
-
   class MouseCursor {
+    _overrideRuntimeFunctions () {
+      const postMouseData = (e, isDown) => {
+        const { movementX, movementY } = e;
+        const { width, height } = rect;
+        const x = mouse._clientX + movementX;
+        const y = mouse._clientY - movementY;
+        mouse._clientX = x;
+        mouse._scratchX = mouse.runtime.stageWidth * (x / width - 0.5);
+        mouse._clientY = y;
+        mouse._scratchY = mouse.runtime.stageWidth * (y / height - 0.5);
+        if (typeof isDown === "boolean") {
+          const data = {
+            button: e.button,
+            isDown,
+          };
+          originalPostIOData(data);
+        }
+      };
+
+      const mouseDevice = vm.runtime.ioDevices.mouse;
+      const originalPostIOData = mouseDevice.postData.bind(mouseDevice);
+      mouseDevice.postData = (data) => {
+        if (!isPointerLockEnabled) {
+          return originalPostIOData(data);
+        }
+      };
+
+      const oldStep = vm.runtime._step;
+      vm.runtime._step = function (...args) {
+        const ret = oldStep.call(this, ...args);
+        if (isPointerLockEnabled) {
+          const { width, height } = rect;
+          mouse._clientX = width / 2;
+          mouse._clientY = height / 2;
+          mouse._scratchX = 0;
+          mouse._scratchY = 0;
+        }
+        return ret;
+      };
+    }
+
     constructor() {
-      Scratch.vm.runtime.on("RUNTIME_DISPOSED", () => {
+      /**
+       * The extension identifier of this block package.
+       */
+      this.extId = "usbMouse";
+
+      /**
+       * The Scratch Virtual Machine instance.
+       */
+      this.vm = Scratch.vm;
+
+      /**
+       * The runtime instantiating this block package.
+       */
+      this.runtime = this.vm.runtime;
+
+      this.runtime.runtime.on("RUNTIME_DISPOSED", () => {
         this.setCur({
           cur: "default",
         });
+      });
+
+      this.runtime.on("AFTER_EXECUTE", () => {
+        this.scrollY = 0;
       });
 
       this.cursors = [
@@ -254,27 +270,23 @@
         "nesw-resize",
         "nwse-resize",
       ];
-      
-      Scratch.vm.runtime.on("AFTER_EXECUTE", () => {
-        this.scrollY = 0;
-      });
 
       canvas.addEventListener("wheel", updateScrollValues);
       function updateScrollValues(event) {
         scrollX = event.deltaX;
         scrollY = event.deltaY;
 
-        Scratch.vm.runtime.startHats("usbMouse_whenMouseWheel", {
+        this.runtime.startHats("usbMouse_whenMouseWheel", {
           DIRECTION: "any",
         });
         if (scrollY > 0) {
-          Scratch.vm.runtime.startHats("usbMouse_whenMouseWheel", {
+          this.runtime.startHats("usbMouse_whenMouseWheel", {
             DIRECTION: "down",
           });
           scrollDistance--;
           scrollDistanceDown--;
         } else if (scrollY < 0) {
-          Scratch.vm.runtime.startHats("usbMouse_whenMouseWheel", {
+          this.runtime.startHats("usbMouse_whenMouseWheel", {
             DIRECTION: "up",
           });
           scrollDistance++;
@@ -287,7 +299,7 @@
           // @ts-expect-error
           if (canvas.contains(e.target)) {
             if (isLocked) {
-              postMouseData(e, true);
+              this.postMouseData(e, true);
             } else if (isPointerLockEnabled) {
               canvas.requestPointerLock();
             }
@@ -300,7 +312,7 @@
         "mouseup",
         (e) => {
           if (isLocked) {
-            postMouseData(e, false);
+            this.postMouseData(e, false);
             // @ts-expect-error
           } else if (isPointerLockEnabled && canvas.contains(e.target)) {
             canvas.requestPointerLock();
@@ -313,7 +325,7 @@
         "mousemove",
         (e) => {
           if (isLocked) {
-            postMouseData(e);
+            this.postMouseData(e);
           }
         },
         true
@@ -331,7 +343,7 @@
 
     getInfo() {
       return {
-        id: "usbMouse",
+        id: this.extId,
         name: Scratch.translate("Mouse"),
         blocks: [
           {
