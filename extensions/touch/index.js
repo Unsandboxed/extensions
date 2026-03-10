@@ -1,24 +1,51 @@
-(function (Scratch) {
-  'use strict';
+/** 
+ * NOTES: Will add comments explaining what functions do.
+ */
 
-  class MultiTouchExtension {
+(function (Scratch) {
+  "use strict";
+
+  /**
+   * Unsandboxed blocks for multitouch.
+   * @constructor
+   */
+  class UnsandboxedMultiTouchBlocks {
     constructor() {
+      /**
+       * The extension identifier of this block package.
+       */
+      this.extId = "usbTouch";
+
+      /**
+       * The Scratch Virtual Machine instance.
+       */
+      this.vm = Scratch.vm;
+
+      /**
+       * The runtime instantiating this block package.
+       */
+      this.runtime = this.vm.runtime;
+
       /**
        * @type {HTMLDivElement}
        */
       this.canvasDiv = null;
+
       /**
        * @type {HTMLCanvasElement}
        */
       this.canvas = null;
+
       /**
        * @type {Array.<Touch>}
        */
       this._touches = [];
+
       /**
        * @type {Array.<null|Touch>}
        */
       this._fingers = [];
+
       this._setup();
     }
 
@@ -48,46 +75,49 @@
       force: (t) => t.force,
     };
 
+    /**
+     * @returns {object} metadata for this extension and its blocks.
+     */
     getInfo() {
       return {
-        id: 'usbTouch',
-        name: 'Touch Control',
-        color1: '#5CB1D6',
+        id: this.extId,
+        name: Scratch.translate("Touch Control"),
+        color1: "#5CB1D6",
         blocks: [
           {
-            opcode: 'touchAvailable',
+            opcode: "touchAvailable",
             blockType: Scratch.BlockType.BOOLEAN,
-            text: 'is touch available?',
+            text: Scratch.translate("is touch available?"),
             extensions: ["colours_sensing"],
           },
           {
-            opcode: 'maxMultiTouch',
+            opcode: "maxMultiTouch",
             blockType: Scratch.BlockType.REPORTER,
-            text: 'maximum finger count',
+            text: Scratch.translate("maximum finger count"),
             extensions: ["colours_sensing"],
           },
-          '---',
+          "---",
           {
-            opcode: 'numOfFingers',
+            opcode: "numOfFingers",
             blockType: Scratch.BlockType.REPORTER,
-            text: 'number of fingers',
-            extensions: ["colours_sensing"],
-          },
-          {
-            opcode: 'numOfFingersID',
-            blockType: Scratch.BlockType.REPORTER,
-            text: 'number of fingers ID',
+            text: Scratch.translate("number of fingers"),
             extensions: ["colours_sensing"],
           },
           {
-            opcode: 'propOfFinger',
+            opcode: "numOfFingersID",
             blockType: Scratch.BlockType.REPORTER,
-            text: '[PROP] of finger [ID]',
+            text: Scratch.translate("number of fingers ID"),
+            extensions: ["colours_sensing"],
+          },
+          {
+            opcode: "propOfFinger",
+            blockType: Scratch.BlockType.REPORTER,
+            text: Scratch.translate("[PROP] of finger [ID]"),
             arguments: {
               PROP: {
                 type: Scratch.ArgumentType.STRING,
-                defaultValue: 'x',
-                menu: 'prop',
+                defaultValue: "x",
+                menu: "prop",
               },
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -97,9 +127,9 @@
             extensions: ["colours_sensing"],
           },
           {
-            opcode: 'fingerExists',
+            opcode: "fingerExists",
             blockType: Scratch.BlockType.BOOLEAN,
-            text: 'finger [ID] exists?',
+            text: Scratch.translate("finger [ID] exists?"),
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -122,14 +152,24 @@
              * duration: time since finger press
              * force (some devices only): force of finger press
              */
-            items: ['x', 'y', 'dx', 'dy', 'sx', 'sy', 'duration', 'force'],
+            items: [
+              "x", "y", "dx", "dy", "sx", "sy",
+              {
+                text: Scratch.translate("duration"),
+                value: "duration",
+              },
+              {
+                text: Scratch.translate("force"),
+                value: "force",
+              }
+            ],
           },
         },
       };
     }
 
     _setup() {
-      this.canvas = Scratch.vm.runtime.renderer.canvas;
+      this.canvas = this.runtime.renderer.canvas;
       this.canvasDiv = this.canvas.parentElement;
 
       // update touchList
@@ -171,9 +211,9 @@
         while (this._fingers.length > 0 && this._fingers.at(-1) === null) { this._fingers.pop(); }
         console.log(this._fingers)
       }
-      this.canvasDiv.addEventListener('touchstart', e => upd(e));
-      this.canvasDiv.addEventListener('touchmove', e => upd(e));
-      this.canvasDiv.addEventListener('touchend', e => upd(e));
+      this.canvasDiv.addEventListener("touchstart", e => upd(e));
+      this.canvasDiv.addEventListener("touchmove", e => upd(e));
+      this.canvasDiv.addEventListener("touchend", e => upd(e));
     }
 
     touchAvailable() {
@@ -191,10 +231,10 @@
       return this._fingers.length;
     }
 
-    propOfFinger({ PROP, ID }) {
-      PROP = this._propMap[PROP];
+    propOfFinger(args, util) {
+      const PROP = this._propMap[PROP];
       ID = Scratch.Cast.toNumber(ID) - 1;
-      if (ID >= this._fingers.length || this._fingers[ID] === null) return '';
+      if (ID >= this._fingers.length || this._fingers[ID] === null) return "";
       return PROP(this._fingers[ID]);
     }
 
@@ -203,5 +243,5 @@
       return ID < this._fingers.length && this._fingers[ID] !== null;
     }
   }
-  Scratch.extensions.register(new MultiTouchExtension());
+  Scratch.extensions.register(new UnsandboxedMultiTouchBlocks());
 })(Scratch);

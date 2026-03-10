@@ -1,11 +1,25 @@
 (function (Scratch) {
   "use strict";
 
+  /**
+   * Unsandboxed blocks for inline code notation.
+   * @constructor
+   */
   class CommentBlocks {
+    constructor() {
+      /**
+       * The extension identifier of this block package.
+       */
+      this.extId = "comments";
+    }
+
+    /**
+     * @returns {object} metadata for this extension and its blocks.
+     */
     getInfo() {
       return {
-        id: "comments",
-        name: "Comment Blocks",
+        id: this.extId,
+        name: Scratch.translate("Comment Blocks"),
         color1: "#e4db8c",
         color2: "#c6be79",
         color3: "#a8a167",
@@ -18,7 +32,8 @@
             arguments: {
               COMMENT: {
                 type: Scratch.ArgumentType.STRING,
-                defaultValue: "comment",
+                defaultValue: Scratch.translate("comment"),
+                acceptReporters: false,
               },
             },
           },
@@ -29,7 +44,8 @@
             arguments: {
               COMMENT: {
                 type: Scratch.ArgumentType.STRING,
-                defaultValue: "comment",
+                defaultValue: Scratch.translate("comment"),
+                acceptReporters: false,
               },
             },
           },
@@ -40,7 +56,8 @@
             arguments: {
               COMMENT: {
                 type: Scratch.ArgumentType.STRING,
-                defaultValue: "comment",
+                defaultValue: Scratch.translate("comment"),
+                acceptReporters: false,
               },
             },
           },
@@ -52,7 +69,8 @@
             arguments: {
               COMMENT: {
                 type: Scratch.ArgumentType.STRING,
-                defaultValue: "comment",
+                defaultValue: Scratch.translate("comment"),
+                acceptReporters: false,
               },
               INPUT: {
                 type: Scratch.ArgumentType.STRING,

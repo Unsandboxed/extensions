@@ -2,40 +2,60 @@
   "use strict";
 
   const cast = Scratch.UnsandboxedMod.Cast;
-  const clone = (val) => { 
-    return [...val]
-  };
 
+  /**
+   * Unsandboxed blocks for working with JSON Arrays.
+   * @constructor
+   */
   class UnsandboxedArraysBlocks {
     constructor() {
+      /**
+       * The extension identifier of this block package.
+       */
+      this.extId = "arrays";
     }
 
+    /**
+     * Deep-clone an array and preserve its contents.
+     * Functions, classes, and all types will be preserved.
+     * We cannot use standard clone because it'll break our
+     * custom types implementation.
+     * @param {object} value The array to clone
+     * @returns {object} The cloned array
+     */
+    complexClone (value) {
+      return {...value}
+    };
+
+    /**
+     * @returns {object} metadata for this extension and its blocks.
+     */
     getInfo() {
       return {
-        id: "arrays",
-        name: "Arrays",
+        id: this.extId,
+        name: Scratch.translate("Arrays"),
         color1: "#737fff",
         blocks: [
           {
             opcode: "newArray",
             blockType: Scratch.BlockType.ARRAY,
-            text: "new array",
+            text: Scratch.translate("new array"),
           },
           {
             opcode: "stringToArray",
             blockType: Scratch.BlockType.ARRAY,
-            text: "[STRING] to array",
+            text: Scratch.translate("[STRING] to array"),
             arguments: {
               STRING: {
                 type: Scratch.ArgumentType.STRING,
-                defaultValue: `["thing"]`,
+                defaultValue: `["${Scratch.translate("thing")}"]`,
               }
             }
           },
           {
             opcode: "concat",
             blockType: Scratch.BlockType.ARRAY,
-            text: "join [ARRAY1] [ARRAY2]",
+            text: Scratch.translate("join [ARRAY1] [ARRAY2]"),
             arguments: {
               ARRAY1: {
                 type: Scratch.ArgumentType.ARRAY
@@ -49,11 +69,11 @@
           {
             opcode: "addItem",
             blockType: Scratch.BlockType.ARRAY,
-            text: "add [ITEM] to [ARRAY]",
+            text: Scratch.translate("add [ITEM] to [ARRAY]"),
             arguments: {
               ITEM: {
                 type: Scratch.ArgumentType.STRING,
-                defaultValue: "thing",
+                defaultValue: Scratch.translate("thing"),
               },
               ARRAY: {
                 type: Scratch.ArgumentType.ARRAY
@@ -63,7 +83,7 @@
           {
             opcode: "deleteItem",
             blockType: Scratch.BlockType.ARRAY,
-            text: "delete [INDEX] of [ARRAY]",
+            text: Scratch.translate("delete [INDEX] of [ARRAY]"),
             arguments: {
               INDEX: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -79,11 +99,11 @@
           {
             opcode: "insertItem",
             blockType: Scratch.BlockType.ARRAY,
-            text: "insert [ITEM] at [INDEX] of [ARRAY]",
+            text: Scratch.translate("insert [ITEM] at [INDEX] of [ARRAY]"),
             arguments: {
               ITEM: {
                 type: Scratch.ArgumentType.STRING,
-                defaultValue: "thing",
+                defaultValue: Scratch.translate("thing"),
               },
               INDEX: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -98,7 +118,7 @@
           {
             opcode: "replaceItem",
             blockType: Scratch.BlockType.ARRAY,
-            text: "replace item [INDEX] of [ARRAY] with [ITEM]",
+            text: Scratch.translate("replace item [INDEX] of [ARRAY] with [ITEM]"),
             arguments: {
               INDEX: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -110,7 +130,7 @@
               },
               ITEM: {
                 type: Scratch.ArgumentType.STRING,
-                defaultValue: "thing",
+                defaultValue: Scratch.translate("thing"),
               },
             },
           },
@@ -118,7 +138,7 @@
           {
             opcode: "itemAtIndex",
             blockType: Scratch.BlockType.REPORTER,
-            text: "item [INDEX] of [ARRAY]",
+            text: Scratch.translate("item [INDEX] of [ARRAY]"),
             arguments: {
               INDEX: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -133,11 +153,11 @@
           {
             opcode: "itemNumber",
             blockType: Scratch.BlockType.REPORTER,
-            text: "item # of [ITEM] in [ARRAY]",
+            text: Scratch.translate("item # of [ITEM] in [ARRAY]"),
             arguments: {
               ITEM: {
                 type: Scratch.ArgumentType.STRING,
-                defaultValue: "thing",
+                defaultValue: Scratch.translate("thing"),
               },
               ARRAY: {
                 type: Scratch.ArgumentType.ARRAY
@@ -147,7 +167,7 @@
           {
             opcode: "length",
             blockType: Scratch.BlockType.REPORTER,
-            text: "length of [ARRAY]",
+            text: Scratch.translate("length of [ARRAY]"),
             arguments: {
               ARRAY: {
                 type: Scratch.ArgumentType.ARRAY
@@ -157,14 +177,14 @@
           {
             opcode: "contains",
             blockType: Scratch.BlockType.BOOLEAN,
-            text: "[ARRAY] contains [ITEM]?",
+            text: Scratch.translate("[ARRAY] contains [ITEM]?"),
             arguments: {
               ARRAY: {
                 type: Scratch.ArgumentType.ARRAY
               },
               ITEM: {
                 type: Scratch.ArgumentType.STRING,
-                defaultValue: "thing",
+                defaultValue: Scratch.translate("thing"),
               },
             },
           },
@@ -176,11 +196,11 @@
             items: [
               "1",
               {
-                text: "last",
+                text: Scratch.translate("last"),
                 value: "_last_",
               },
               {
-                text: "random",
+                text: Scratch.translate("random"),
                 value: "_random_",
               }
             ]
@@ -191,11 +211,11 @@
             items: [
               "1",
               {
-                text: "last",
+                text: Scratch.translate("last"),
                 value: "_last_",
               },
               {
-                text: "all",
+                text: Scratch.translate("all"),
                 value: "_all_",
               }
             ]
@@ -209,19 +229,19 @@
     }
 
     stringToArray(args) {
-      const array = clone(cast.toArray(args.STRING));
+      const array = this.complexClone(cast.toArray(args.STRING));
       return array;
     }
 
     concat(args) {
-      const array1 = clone(cast.toArray(args.ARRAY1)) ?? [];
-      const array2 = clone(cast.toArray(args.ARRAY2)) ?? [];
+      const array1 = this.complexClone(cast.toArray(args.ARRAY1)) ?? [];
+      const array2 = this.complexClone(cast.toArray(args.ARRAY2)) ?? [];
 
       return array1.concat(array2);
     }
 
     addItem(args) {
-      const array = clone(cast.toArray(args.ARRAY)) ?? [];
+      const array = this.complexClone(cast.toArray(args.ARRAY)) ?? [];
       const item = args.ITEM ?? "";
 
       array.push(item);
@@ -229,7 +249,7 @@
     }
 
     deleteItem(args) {
-      const array = clone(cast.toArray(args.ARRAY)) ?? [];
+      const array = this.complexClone(cast.toArray(args.ARRAY)) ?? [];
       const index = this._getIndex(args.INDEX, array.length);
 
       if (index === "_all_") return [];
@@ -239,7 +259,7 @@
     }
 
     insertItem(args) {
-      const array = clone(cast.toArray(args.ARRAY)) ?? [];
+      const array = this.complexClone(cast.toArray(args.ARRAY)) ?? [];
       const item = args.ITEM ?? "";
       const index = this._getIndex(args.INDEX, array.length);
       
@@ -248,7 +268,7 @@
     }
 
     replaceItem(args) {
-      const array = clone(cast.toArray(args.ARRAY)) ?? [];
+      const array = this.complexClone(cast.toArray(args.ARRAY)) ?? [];
       const item = args.ITEM ?? "";
       const index = this._getIndex(args.INDEX, array.length);
 
@@ -264,20 +284,20 @@
     }
 
     itemNumber(args) {
-      const array = clone(cast.toArray(args.ARRAY)) ?? [];
+      const array = this.complexClone(cast.toArray(args.ARRAY)) ?? [];
       const item = args.ITEM ?? "";
 
       return array.indexOf(item);
     }
 
     length(args) {
-      const array = clone(cast.toArray(args.ARRAY)) ?? [];
+      const array = this.complexClone(cast.toArray(args.ARRAY)) ?? [];
 
       return array.length;
     }
 
     contains(args) {
-      const array = clone(cast.toArray(args.ARRAY)) ?? [];
+      const array = this.complexClone(cast.toArray(args.ARRAY)) ?? [];
       const item = args.ITEM ?? "";
 
       return array.includes(item);

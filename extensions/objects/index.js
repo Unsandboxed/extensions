@@ -1,41 +1,61 @@
 (function (Scratch) {
   "use strict";
 
-  const cast = Unsandboxed.Util.Cast;
-  const clone = (val) => {
-    return {...val}
-  };
+  const cast = Scratch.UnsandboxedMod.Cast;
 
+  /**
+   * Unsandboxed blocks for working with JSON Objects.
+   * @constructor
+   */
   class UnsandboxedObjectsBlocks {
     constructor() {
+      /**
+       * The extension identifier of this block package.
+       */
+      this.extId = "objects";
     }
 
+    /**
+     * Deep-clone an object and preserve its contents.
+     * Functions, classes, and all types will be preserved.
+     * We cannot use standard clone because it'll break our
+     * custom types implementation.
+     * @param {object} value The object to clone
+     * @returns {object} The cloned object
+     */
+    complexClone (value) {
+      return {...value}
+    };
+
+    /**
+     * @returns {object} metadata for this extension and its blocks.
+     */
     getInfo() {
       return {
-        id: "objects",
-        name: "Objects",
+        id: this.extId,
+        name: Scratch.translate("Objects"),
         color1: "#e765a8",
         blocks: [
           {
             opcode: "newObject",
             blockType: Scratch.BlockType.OBJECT,
-            text: "new object",
+            text: Scratch.translate("new object"),
           },
           {
             opcode: "stringToObject",
             blockType: Scratch.BlockType.OBJECT,
-            text: "[STRING] to object",
+            text: Scratch.translate("[STRING] to object"),
             arguments: {
               STRING: {
                 type: Scratch.ArgumentType.STRING,
-                defaultValue: `{"fruit": "apple"}`,
+                defaultValue: `{"${Scratch.translate("fruit")}": "${Scratch.translate("apple")}"}`,
               }
             }
           },
           {
             opcode: "concat",
             blockType: Scratch.BlockType.OBJECT,
-            text: "join [OBJECT1] [OBJECT2]",
+            text: Scratch.translate("join [OBJECT1] [OBJECT2]"),
             arguments: {
               OBJECT1: {
                 type: Scratch.ArgumentType.OBJECT
@@ -49,12 +69,12 @@
           {
             opcode: "getKey",
             blockType: Scratch.BlockType.REPORTER,
-            text: "[KEY] in [OBJECT]",
+            text: Scratch.translate("[KEY] in [OBJECT]"),
             allowDropAnywhere: true,
             arguments: {
               KEY: {
                 type: Scratch.ArgumentType.STRING,
-                defaultValue: "fruit"
+                defaultValue: Scratch.translate("fruit"),
               },
               OBJECT: {
                 type: Scratch.ArgumentType.OBJECT,
@@ -64,11 +84,11 @@
           {
             opcode: "getKeysValues",
             blockType: Scratch.BlockType.ARRAY,
-            text: "all [THING] in [OBJECT]",
+            text: Scratch.translate("all [THING] in [OBJECT]"),
             arguments: {
               THING: {
                 type: Scratch.ArgumentType.STRING,
-                menu: "keyValue"
+                menu: "keyValue",
               },
               OBJECT: {
                 type: Scratch.ArgumentType.OBJECT,
@@ -79,15 +99,15 @@
           {
             opcode: "setKey",
             blockType: Scratch.BlockType.OBJECT,
-            text: "set [KEY] to [VALUE] in [OBJECT]",
+            text: Scratch.translate("set [KEY] to [VALUE] in [OBJECT]"),
             arguments: {
               KEY: {
                 type: Scratch.ArgumentType.STRING,
-                defaultValue: "fruit",
+                defaultValue: Scratch.translate("fruit"),
               },
               VALUE: {
                 type: Scratch.ArgumentType.STRING,
-                defaultValue: "apple",
+                defaultValue: Scratch.translate("apple"),
               },
               OBJECT: {
                 type: Scratch.ArgumentType.OBJECT,
@@ -97,11 +117,11 @@
           {
             opcode: "deleteKey",
             blockType: Scratch.BlockType.OBJECT,
-            text: "delete [KEY] in [OBJECT]",
+            text: Scratch.translate("delete [KEY] in [OBJECT]"),
             arguments: {
               KEY: {
                 type: Scratch.ArgumentType.STRING,
-                defaultValue: "fruit",
+                defaultValue: Scratch.translate("fruit"),
               },
               OBJECT: {
                 type: Scratch.ArgumentType.OBJECT,
@@ -112,14 +132,14 @@
           {
             opcode: "setKeys",
             blockType: Scratch.BlockType.OBJECT,
-            text: "set keys [KEYS] to [VALUE] in [OBJECT]",
+            text: Scratch.translate("set keys [KEYS] to [VALUE] in [OBJECT]"),
             arguments: {
               KEYS: {
                 type: Scratch.ArgumentType.ARRAY,
               },
               VALUE: {
                 type: Scratch.ArgumentType.STRING,
-                defaultValue: "apple",
+                defaultValue: Scratch.translate("apple"),
               },
               OBJECT: {
                 type: Scratch.ArgumentType.OBJECT,
@@ -129,7 +149,7 @@
           {
             opcode: "deleteKeys",
             blockType: Scratch.BlockType.OBJECT,
-            text: "delete keys [KEYS] in [OBJECT]",
+            text: Scratch.translate("delete keys [KEYS] in [OBJECT]"),
             arguments: {
               KEYS: {
                 type: Scratch.ArgumentType.ARRAY,
@@ -141,6 +161,7 @@
           },
         ],
         menus: {
+          // TODO: translate
           keyValue: {
             acceptReporters: true,
             items: [
@@ -154,11 +175,11 @@
             items: [
               "1",
               {
-                text: "last",
+                text: Scratch.translate("last"),
                 value: "_last_",
               },
               {
-                text: "random",
+                text: Scratch.translate("random"),
                 value: "_random_",
               }
             ]
@@ -169,11 +190,11 @@
             items: [
               "1",
               {
-                text: "last",
+                text: Scratch.translate("last"),
                 value: "_last_",
               },
               {
-                text: "all",
+                text: Scratch.translate("all"),
                 value: "_all_",
               }
             ]
@@ -187,26 +208,26 @@
     }
 
     stringToObject(args) {
-      const object = clone(cast.toObject(args.STRING));
+      const object = this.complexClone(cast.toObject(args.STRING));
       return object;
     }
 
     concat(args) {
-      const object1 = clone(cast.toObject(args.OBJECT1));
-      const object2 = clone(cast.toObject(args.OBJECT2));
+      const object1 = this.complexClone(cast.toObject(args.OBJECT1));
+      const object2 = this.complexClone(cast.toObject(args.OBJECT2));
 
       return {...object1, ...object2};
     }
 
     getKey(args) {
-      const object = clone(cast.toObject(args.OBJECT));
+      const object = this.complexClone(cast.toObject(args.OBJECT));
       const key = cast.sanitize(args.KEY);
 
       return object[key] ?? "";
     }
 
     getKeysValues(args) {
-      const object = clone(cast.toObject(args.OBJECT));
+      const object = this.complexClone(cast.toObject(args.OBJECT));
       const thing = cast.toString(args.THING).toLowerCase();
 
       if (thing === "keys") {
@@ -217,7 +238,7 @@
     }
 
     setKey(args) {
-      const object = clone(cast.toObject(args.OBJECT));
+      const object = this.complexClone(cast.toObject(args.OBJECT));
       const key = cast.sanitize(args.KEY);
       const value = args.VALUE;
 
@@ -226,7 +247,7 @@
     }
 
     deleteKey(args) {
-      const object = clone(cast.toObject(args.OBJECT));
+      const object = this.complexClone(cast.toObject(args.OBJECT));
       const key = cast.sanitize(args.KEY);
 
       delete object[key];
@@ -234,8 +255,8 @@
     }
 
     setKeys(args) {
-      const object = clone(cast.toObject(args.OBJECT));
-      const keys = clone(cast.toArray(args.KEYS));
+      const object = this.complexClone(cast.toObject(args.OBJECT));
+      const keys = this.complexClone(cast.toArray(args.KEYS));
       const value = args.VALUE;
 
       for (const key of keys) {
@@ -246,8 +267,8 @@
     }
 
     deleteKeys(args) {
-      const object = clone(cast.toObject(args.OBJECT));
-      const keys = clone(cast.toArray(args.KEYS));
+      const object = this.complexClone(cast.toObject(args.OBJECT));
+      const keys = this.complexClone(cast.toArray(args.KEYS));
 
       for (const key of keys) {
         delete object[key];
