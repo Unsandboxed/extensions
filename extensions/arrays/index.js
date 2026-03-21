@@ -24,7 +24,7 @@
      * @returns {object} The cloned array
      */
     complexClone (value) {
-      return {...value}
+      return [...value]
     };
 
     /**
