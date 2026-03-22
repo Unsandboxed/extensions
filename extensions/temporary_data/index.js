@@ -2,19 +2,19 @@
   "use strict";
 
   const cast = Scratch.UnsandboxedMod.Cast;
-  const stringUtil = new Scratch.UnsandboxedMod.Strings();
+  const stringUtil = Scratch.UnsandboxedMod.Strings;
 
   /**
    * Unsandboxed blocks for temporary data stored on the executing thread.
    * @constructor
    */
   class UnsandboxedTemporaryDataBlocks {
-    constructor() {
-      /**
-       * The extension identifier of this block package.
-       */
-      this.extId = "usbTemporaryData";
+    /**
+     * The extension identifier of this block package.
+     */
+    static extensionId = "usbTemporaryData";
 
+    constructor() {
       /**
        * The Scratch Virtual Machine instance.
        */
@@ -31,7 +31,7 @@
      */
     getInfo() {
       return {
-        id: this.extId,
+        id: UnsandboxedTemporaryDataBlocks.extensionId,
         name: Scratch.translate("Temporary Data"),
         color1: "#bc4749",
         blocks: [
