@@ -6,19 +6,17 @@
    * @constructor
    */
   class CommentBlocks {
-    constructor() {
-      /**
-       * The extension identifier of this block package.
-       */
-      this.extId = "comments";
-    }
+    /**
+     * The extension identifier of this block package.
+     */
+    static extensionId = "comments";
 
     /**
      * @returns {object} metadata for this extension and its blocks.
      */
     getInfo() {
       return {
-        id: this.extId,
+        id: CommentBlocks.extensionId,
         name: Scratch.translate("Comment Blocks"),
         color1: "#e4db8c",
         color2: "#c6be79",
