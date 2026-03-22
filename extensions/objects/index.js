@@ -8,12 +8,10 @@
    * @constructor
    */
   class UnsandboxedObjectsBlocks {
-    constructor() {
-      /**
-       * The extension identifier of this block package.
-       */
-      this.extId = "objects";
-    }
+    /**
+     * The extension identifier of this block package.
+     */
+    static extensionId = "objects";
 
     /**
      * Deep-clone an object and preserve its contents.
@@ -32,7 +30,7 @@
      */
     getInfo() {
       return {
-        id: this.extId,
+        id: UnsandboxedObjectsBlocks.extensionId,
         name: Scratch.translate("Objects"),
         color1: "#e765a8",
         blocks: [
