@@ -1,72 +1,156 @@
-// Name: Runtime Options
-// ID: runtimeoptions
-// Description: Get and modify turbo mode, framerate, interpolation, clone limit, stage size, and more.
-
 (function (Scratch) {
   "use strict";
 
-  if (!Scratch.extensions.unsandboxed) {
-    throw new Error("Runtime Options extension needs to be run unsandboxed");
-  }
-
-  const TURBO_MODE = "turbo mode";
-  const REMOVE_FENCING = "remove fencing";
-  const REMOVE_MISC_LIMITS = "remove misc limits";
-  const HIGH_QUALITY_PEN = "high quality pen";
-  const FRAMERATE = "framerate";
-  const CLONE_LIMIT = "clone limit";
-  const STAGE_SIZE = "stage size";
-  const USERNAME = "username";
-
-  /** @param {string} thing */
-  const emitChanged = (thing) =>
-    Scratch.vm.runtime.startHats("usbRuntime_whenChange", {
-      thing,
-    });
+  const Cast = Scratch.UnsandboxedMod.Cast;
+  const translate = Scratch.translate;
 
   /**
-   * @template T
-   * @param {T} obj
-   * @returns {T}
+   * The constructor for a Scratch Runtime.
+   * We only use this to get constants from.
+   * TODO: There's probably a better way to get this.
    */
-  const shallowCopy = (obj) => Object.assign({}, obj);
+  const Runtime = vm.runtime.constructor;
 
-  let previousRuntimeOptions = shallowCopy(Scratch.vm.runtime.runtimeOptions);
+  /**
+   * The constructor for a Scratch Renderer.
+   * We only use this to get constants from.
+   * TODO: There's probably a better way to get this.
+   */
+  const Renderer = vm.runtime.renderer.constructor;
 
-  Scratch.vm.on("TURBO_MODE_OFF", () => emitChanged(TURBO_MODE));
-  Scratch.vm.on("TURBO_MODE_ON", () => emitChanged(TURBO_MODE));
-  Scratch.vm.on("RUNTIME_OPTIONS_CHANGED", (newOptions) => {
-    if (newOptions.fencing !== previousRuntimeOptions.fencing) {
-      emitChanged(REMOVE_FENCING);
-    }
-    if (newOptions.miscLimits !== previousRuntimeOptions.miscLimits) {
-      emitChanged(REMOVE_MISC_LIMITS);
-    }
-    if (newOptions.maxClones !== previousRuntimeOptions.maxClones) {
-      emitChanged(CLONE_LIMIT);
-    }
-    previousRuntimeOptions = shallowCopy(newOptions);
-  });
-  Scratch.vm.renderer.on("UseHighQualityRenderChanged", () =>
-    emitChanged(HIGH_QUALITY_PEN)
-  );
-  Scratch.vm.on("FRAMERATE_CHANGED", () => emitChanged(FRAMERATE));
-  Scratch.vm.on("STAGE_SIZE_CHANGED", () => emitChanged(STAGE_SIZE));
+  /**
+   * Unsandboxed blocks for modifying the runtime.
+   * @constructor
+   */
+  class UnsandboxedRuntimeBlocks {
+    /**
+     * The extension identifier of this block package.
+     * @type {string}
+     */
+    static extensionId = "usbRuntime";
 
-  const originalPostData = Scratch.vm.runtime.ioDevices.userData.postData;
-  Scratch.vm.runtime.ioDevices.userData.postData = function (data) {
-    const newUsername = data.username !== this._username;
-    originalPostData.call(this, data);
-    if (newUsername) {
-      emitChanged(USERNAME);
-    }
-  };
+    /**
+     * The identifier for the "turbo mode" option.
+     * @type {string}
+     */
+    static TURBO_MODE = "turbo mode";
 
-  class Runtime {
+    /**
+     * The identifier for the "remove fencing" option.
+     * @type {string}
+     */
+    static REMOVE_FENCING = "remove fencing";
+
+    /**
+     * The identifier for the "remove misc limits" option.
+     * @type {string}
+     */
+    static REMOVE_MISC_LIMITS = "remove misc limits";
+
+    /**
+     * The identifier for the "high quality pen" option.
+     * @type {string}
+     */
+    static HIGH_QUALITY_PEN = "high quality pen";
+
+    /**
+     * The identifier for the "framerate" option.
+     * @type {string}
+     */
+    static FRAMERATE = "framerate";
+
+    /**
+     * The identifier for the "clone limit" option.
+     * @type {string}
+     */
+    static CLONE_LIMIT = "clone limit";
+
+    /**
+     * The identifier for the "stage size" option.
+     * @type {string}
+     */
+    static STAGE_SIZE = "stage size";
+
+    /**
+     * The identifier for the "username" option.
+     * @type {string}
+     */
+    static USERNAME = "username";
+
+    constructor() {
+      /**
+       * The Scratch Virtual Machine instance.
+       * @type {VirtualMachine}
+       */
+      this.vm = Scratch.vm;
+
+      /**
+       * The runtime instantiating this block package.
+       * @type {Runtime}
+       */
+      this.runtime = this.vm.runtime;
+
+      this.previousRuntimeOptions = this.shallowClone(Scratch.vm.runtime.runtimeOptions);
+
+      /**
+       * Emit our custom events when Turbo Mode has changed.
+       */
+      this.vm.on(Runtime.TURBO_MODE_OFF, () => this.emitChanged(UnsandboxedRuntimeBlocks.TURBO_MODE));
+      this.vm.on(Runtime.TURBO_MODE_ON, () => this.emitChanged(UnsandboxedRuntimeBlocks.TURBO_MODE));
+
+      this.vm.on(Runtime.RUNTIME_OPTIONS_CHANGED, (newOptions) => {
+        if (newOptions.fencing !== this.previousRuntimeOptions.fencing) {
+          this.emitChanged(UnsandboxedRuntimeBlocks.REMOVE_FENCING);
+        }
+        if (newOptions.miscLimits !== this.previousRuntimeOptions.miscLimits) {
+          this.emitChanged(UnsandboxedRuntimeBlocks.REMOVE_MISC_LIMITS);
+        }
+        if (newOptions.maxClones !== this.previousRuntimeOptions.maxClones) {
+          this.emitChanged(UnsandboxedRuntimeBlocks.CLONE_LIMIT);
+        }
+        this.previousRuntimeOptions = this.shallowClone(newOptions);
+      });
+
+      this.vm.renderer.on(Renderer.UseHighQualityRenderChanged, () =>
+        this.emitChanged(UnsandboxedRuntimeBlocks.HIGH_QUALITY_PEN)
+      );
+
+      this.vm.on(Runtime.FRAMERATE_CHANGED, () => this.emitChanged(UnsandboxedRuntimeBlocks.FRAMERATE));
+      this.vm.on(Runtime.STAGE_SIZE_CHANGED, () => this.emitChanged(UnsandboxedRuntimeBlocks.STAGE_SIZE));
+
+      const extensionInstance = this;
+      const originalPostData = this.runtime.ioDevices.userData.postData;
+      this.vm.runtime.ioDevices.userData.postData = function (data) {
+        const newUsername = data.username !== this._username;
+        originalPostData.call(this, data);
+        if (newUsername) {
+          extensionInstance.emitChanged(extensionInstance.USERNAME);
+        }
+      };
+    }
+
+    emitChanged(thing) {
+      this.runtime.startHats("usbRuntime_whenChange", {
+        thing,
+      });
+    }
+
+    /**
+     * @template T
+     * @param {T} obj
+     * @returns {T}
+     */
+    shallowClone(obj) {
+      return Object.assign({}, obj);
+    }
+
+    /**
+     * @returns {object} metadata for this extension and its blocks.
+     */
     getInfo() {
       return {
-        id: "usbRuntime",
-        name: Scratch.translate("Runtime"),
+        id: UnsandboxedRuntimeBlocks.extId,
+        name: translate("Runtime"),
         blocks: [
           {
             opcode: "whenChange",
@@ -75,34 +159,32 @@
             isEdgeActivated: false,
             arguments: {
               thing: {
-                type: Scratch.ArgumentType.STRING, 
-                menu: "changeable" 
+                type: Scratch.ArgumentType.STRING,
+                menu: "changeable"
               },
             },
           },
-
           "---",
-
           {
             opcode: "getEnabled",
-            text: Scratch.translate("[thing] enabled?"),
+            text: translate("[thing] enabled?"),
             blockType: Scratch.BlockType.BOOLEAN,
             arguments: {
               thing: {
                 type: Scratch.ArgumentType.STRING,
-                defaultValue: TURBO_MODE,
+                defaultValue: this.TURBO_MODE,
                 menu: "thing",
               },
             },
           },
           {
             opcode: "setEnabled",
-            text: Scratch.translate("set [thing] to [enabled]"),
+            text: translate("set [thing] to [enabled]"),
             blockType: Scratch.BlockType.COMMAND,
             arguments: {
               thing: {
                 type: Scratch.ArgumentType.STRING,
-                defaultValue: TURBO_MODE,
+                defaultValue: this.TURBO_MODE,
                 menu: "thing",
               },
               enabled: {
@@ -112,17 +194,15 @@
               },
             },
           },
-
           "---",
-
           {
             opcode: "getFramerate",
-            text: Scratch.translate("framerate limit"),
+            text: translate("framerate limit"),
             blockType: Scratch.BlockType.REPORTER,
           },
           {
             opcode: "setFramerate",
-            text: Scratch.translate("set framerate limit to [fps]"),
+            text: translate("set framerate limit to [fps]"),
             blockType: Scratch.BlockType.COMMAND,
             arguments: {
               fps: {
@@ -131,17 +211,15 @@
               },
             },
           },
-
           "---",
-
           {
             opcode: "getCloneLimit",
-            text: Scratch.translate("clone limit"),
+            text: translate("clone limit"),
             blockType: Scratch.BlockType.REPORTER,
           },
           {
             opcode: "setCloneLimit",
-            text: Scratch.translate("set clone limit to [limit]"),
+            text: translate("set clone limit to [limit]"),
             blockType: Scratch.BlockType.COMMAND,
             arguments: {
               limit: {
@@ -151,12 +229,10 @@
               },
             },
           },
-
           "---",
-
           {
             opcode: "getDimension",
-            text: Scratch.translate({
+            text: translate({
               default: "stage [dimension]",
               description: "[dimension] is a dropdown of width and height",
             }),
@@ -171,7 +247,7 @@
           },
           {
             opcode: "setDimensions",
-            text: Scratch.translate(
+            text: translate(
               "set stage size width: [width] height: [height]"
             ),
             blockType: Scratch.BlockType.COMMAND,
@@ -186,12 +262,10 @@
               },
             },
           },
-
           "---",
-
           {
             opcode: "setUsername",
-            text: Scratch.translate("set username to [username]"),
+            text: translate("set username to [username]"),
             blockType: Scratch.BlockType.COMMAND,
             arguments: {
               username: {
@@ -206,102 +280,98 @@
             acceptReporters: true,
             items: [
               {
-                text: Scratch.translate("turbo mode"),
-                value: TURBO_MODE,
+                text: translate("turbo mode"),
+                value: UnsandboxedRuntimeBlocks.TURBO_MODE,
               },
               {
-                text: Scratch.translate("remove fencing"),
-                value: REMOVE_FENCING,
+                text: translate("remove fencing"),
+                value: UnsandboxedRuntimeBlocks.REMOVE_FENCING,
               },
               {
-                text: Scratch.translate("remove misc limits"),
-                value: REMOVE_MISC_LIMITS,
+                text: translate("remove misc limits"),
+                value: UnsandboxedRuntimeBlocks.REMOVE_MISC_LIMITS,
               },
               {
-                text: Scratch.translate("high quality pen"),
-                value: HIGH_QUALITY_PEN,
+                text: translate("high quality pen"),
+                value: UnsandboxedRuntimeBlocks.HIGH_QUALITY_PEN,
               },
             ],
           },
-
           changeable: {
             acceptReporters: false,
             items: [
               {
-                text: Scratch.translate("turbo mode"),
-                value: TURBO_MODE,
+                text: translate("turbo mode"),
+                value: UnsandboxedRuntimeBlocks.TURBO_MODE,
               },
               {
-                text: Scratch.translate("remove fencing"),
-                value: REMOVE_FENCING,
+                text: translate("remove fencing"),
+                value: UnsandboxedRuntimeBlocks.REMOVE_FENCING,
               },
               {
-                text: Scratch.translate("remove misc limits"),
-                value: REMOVE_MISC_LIMITS,
+                text: translate("remove misc limits"),
+                value: UnsandboxedRuntimeBlocks.REMOVE_MISC_LIMITS,
               },
               {
-                text: Scratch.translate("high quality pen"),
-                value: HIGH_QUALITY_PEN,
+                text: translate("high quality pen"),
+                value: UnsandboxedRuntimeBlocks.HIGH_QUALITY_PEN,
               },
               {
-                text: Scratch.translate("framerate"),
-                value: FRAMERATE,
+                text: translate("framerate"),
+                value: UnsandboxedRuntimeBlocks.FRAMERATE,
               },
               {
-                text: Scratch.translate("clone limit"),
-                value: CLONE_LIMIT,
+                text: translate("clone limit"),
+                value: UnsandboxedRuntimeBlocks.CLONE_LIMIT,
               },
               {
-                text: Scratch.translate("stage size"),
-                value: STAGE_SIZE,
+                text: translate("stage size"),
+                value: UnsandboxedRuntimeBlocks.STAGE_SIZE,
               },
               {
-                text: Scratch.translate("username"),
-                value: USERNAME,
+                text: translate("username"),
+                value: UnsandboxedRuntimeBlocks.USERNAME,
               },
             ],
           },
-
           enabled: {
             acceptReporters: true,
             items: [
               {
-                text: Scratch.translate("enabled"),
+                text: translate("enabled"),
                 value: "true",
               },
               {
-                text: Scratch.translate("disabled"),
+                text: translate("disabled"),
                 value: "false",
               },
             ],
           },
-
           clones: {
             acceptReporters: true,
             acceptNumber: true,
             items: [
               {
-                text: Scratch.translate("default ({n})", {
+                text: translate("default ({n})", {
                   n: "300",
                 }),
                 value: "300",
               },
               {
-                text: Scratch.translate("Infinity"),
+                text: translate("Infinity"),
                 value: "Infinity",
               },
             ],
           },
-
           dimension: {
             acceptReporters: true,
             items: [
               {
-                text: Scratch.translate("width"),
+                text: translate("width"),
                 value: "width",
               },
               {
-                text: Scratch.translate("height"),
+                text: translate("height"),
                 value: "height",
               },
             ],
@@ -311,32 +381,32 @@
     }
 
     getEnabled({ thing }) {
-      if (thing === TURBO_MODE) {
+      if (thing === UnsandboxedRuntimeBlocks.TURBO_MODE) {
         return Scratch.vm.runtime.turboMode;
-      } else if (thing === REMOVE_FENCING) {
+      } else if (thing === UnsandboxedRuntimeBlocks.REMOVE_FENCING) {
         return !Scratch.vm.runtime.runtimeOptions.fencing;
-      } else if (thing === REMOVE_MISC_LIMITS) {
+      } else if (thing === UnsandboxedRuntimeBlocks.REMOVE_MISC_LIMITS) {
         return !Scratch.vm.runtime.runtimeOptions.miscLimits;
-      } else if (thing === HIGH_QUALITY_PEN) {
+      } else if (thing === UnsandboxedRuntimeBlocks.HIGH_QUALITY_PEN) {
         return Scratch.renderer.useHighQualityRender;
       }
       return false;
     }
 
     setEnabled({ thing, enabled }) {
-      enabled = Scratch.Cast.toBoolean(enabled);
+      enabled = Cast.toBoolean(enabled);
 
-      if (thing === TURBO_MODE) {
+      if (thing === UnsandboxedRuntimeBlocks.TURBO_MODE) {
         Scratch.vm.setTurboMode(enabled);
-      } else if (thing === REMOVE_FENCING) {
+      } else if (thing === this.REMOVE_FENCING) {
         Scratch.vm.setRuntimeOptions({
           fencing: !enabled,
         });
-      } else if (thing === REMOVE_MISC_LIMITS) {
+      } else if (thing === UnsandboxedRuntimeBlocks.REMOVE_MISC_LIMITS) {
         Scratch.vm.setRuntimeOptions({
           miscLimits: !enabled,
         });
-      } else if (thing === HIGH_QUALITY_PEN) {
+      } else if (thing === UnsandboxedRuntimeBlocks.HIGH_QUALITY_PEN) {
         Scratch.renderer.setUseHighQualityRender(enabled);
       }
     }
@@ -346,7 +416,7 @@
     }
 
     setFramerate({ fps }) {
-      fps = Scratch.Cast.toNumber(fps);
+      fps = Cast.toNumber(fps);
       Scratch.vm.setFramerate(fps);
     }
 
@@ -355,7 +425,7 @@
     }
 
     setCloneLimit({ limit }) {
-      limit = Scratch.Cast.toNumber(limit);
+      limit = Cast.toNumber(limit);
       Scratch.vm.setRuntimeOptions({
         maxClones: limit,
       });
@@ -371,17 +441,17 @@
     }
 
     setDimensions({ width, height }) {
-      width = Scratch.Cast.toNumber(width);
-      height = Scratch.Cast.toNumber(height);
+      width = Cast.toNumber(width);
+      height = Cast.toNumber(height);
       Scratch.vm.setStageSize(width, height);
     }
 
     setUsername({ username }) {
       Scratch.vm.postIOData("userData", {
-        username: Scratch.Cast.toString(username),
+        username: Cast.toString(username),
       });
     }
   }
 
-  Scratch.extensions.register(new Runtime());
+  Scratch.extensions.register(new UnsandboxedRuntimeBlocks());
 })(Scratch);
