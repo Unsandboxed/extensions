@@ -6,6 +6,8 @@
 (function (Scratch) {
   "use strict";
 
+  const translate = Scratch.translate;
+
   const lazilyCreatedCanvas = () => {
     /** @type {HTMLCanvasElement} */
     let canvas = null;
@@ -47,10 +49,8 @@
     // The most reliable way to get the bitmap in every runtime is through the silhouette.
     // This is very slow and could involve reading the texture from the GPU.
     const silhouette = skin._silhouette;
-    // unlazy() only exists in TW
-    if (silhouette.unlazy) {
-      silhouette.unlazy();
-    }
+    silhouette.unlazy();
+
     const colorData = silhouette._colorData;
     const width = silhouette._width;
     const height = silhouette._height;
@@ -142,7 +142,7 @@
    * @returns {string}
    */
   const formatUnreliableSize = (size) =>
-    Scratch.translate(
+    translate(
       {
         default: "{size} (unreliable)",
         description: "[size] is replaced with a size in pixels such as '48x48'",
@@ -344,12 +344,12 @@
     getInfo() {
       return {
         id: this.extId,
-        name: Scratch.translate("Mouse"),
+        name: translate("Mouse"),
         blocks: [
           {
             opcode: "whenMouseWheel",
             blockType: Scratch.BlockType.EVENT,
-            text: Scratch.translate("when mouse scrolled [DIRECTION]"),
+            text: translate("when mouse scrolled [DIRECTION]"),
             isEdgeActivated: false,
             arguments: {
               DIRECTION: {
@@ -361,7 +361,7 @@
           {
             opcode: "getMouseScrolling",
             blockType: Scratch.BlockType.BOOLEAN,
-            text: Scratch.translate("mouse scrolling [DIRECTION]?"),
+            text: translate("mouse scrolling [DIRECTION]?"),
             disableMonitor: true,
             arguments: {
               DIRECTION: {
@@ -373,15 +373,13 @@
           {
             opcode: "getMouseWheelDirection",
             blockType: Scratch.BlockType.REPORTER,
-            text: Scratch.translate("mouse wheel direction"),
+            text: translate("mouse wheel direction"),
           },
-
           "---",
-
           {
             opcode: "setMouseTravel",
             blockType: Scratch.BlockType.COMMAND,
-            text: Scratch.translate("set mouse [DIRECTION] distance to [VALUE]"),
+            text: translate("set mouse [DIRECTION] distance to [VALUE]"),
             arguments: {
               DIRECTION: {
                 type: Scratch.ArgumentType.STRING,
@@ -396,7 +394,7 @@
           {
             opcode: "mouseWheelTravel",
             blockType: Scratch.BlockType.REPORTER,
-            text: Scratch.translate("mouse [DIRECTION] distance"),
+            text: translate("mouse [DIRECTION] distance"),
             disableMonitor: true,
             arguments: {
               DIRECTION: {
@@ -409,7 +407,7 @@
           {
             opcode: "setLocked",
             blockType: Scratch.BlockType.COMMAND,
-            text: Scratch.translate("set pointer lock [enabled]"),
+            text: translate("set pointer lock [enabled]"),
             disableMonitor: true,
             arguments: {
               enabled: {
@@ -422,13 +420,13 @@
           {
             opcode: "isLocked",
             blockType: Scratch.BlockType.BOOLEAN,
-            text: Scratch.translate("is pointer locked?"),
+            text: translate("is pointer locked?"),
           },
           "---",
           {
             opcode: "setCur",
             blockType: Scratch.BlockType.COMMAND,
-            text: Scratch.translate("set cursor to [cur]"),
+            text: translate("set cursor to [cur]"),
             arguments: {
               cur: {
                 type: Scratch.ArgumentType.STRING,
@@ -440,7 +438,7 @@
           {
             opcode: "setCursorImage",
             blockType: Scratch.BlockType.COMMAND,
-            text: Scratch.translate(
+            text: translate(
               "set cursor to current costume center: [position] max size: [size]"
             ),
             arguments: {
@@ -459,12 +457,12 @@
           {
             opcode: "hideCur",
             blockType: Scratch.BlockType.COMMAND,
-            text: Scratch.translate("hide cursor"),
+            text: translate("hide cursor"),
           },
           {
             opcode: "getCur",
             blockType: Scratch.BlockType.REPORTER,
-            text: Scratch.translate("cursor"),
+            text: translate("cursor"),
           },
         ],
         menus: {
@@ -493,11 +491,11 @@
             acceptReporters: true,
             items: [
               // [x, y] where x is [0=left, 100=right] and y is [0=top, 100=bottom]
-              { text: Scratch.translate("top left"), value: "0,0" },
-              { text: Scratch.translate("top right"), value: "100,0" },
-              { text: Scratch.translate("bottom left"), value: "0,100" },
-              { text: Scratch.translate("bottom right"), value: "100,100" },
-              { text: Scratch.translate("center"), value: "50,50" },
+              { text: translate("top left"), value: "0,0" },
+              { text: translate("top right"), value: "100,0" },
+              { text: translate("bottom left"), value: "0,100" },
+              { text: translate("bottom right"), value: "100,100" },
+              { text: translate("center"), value: "50,50" },
             ],
           },
           imageSizes: {
@@ -521,7 +519,7 @@
     }
 
     getMouseScrolling(args) {
-      const direction = Scratch.Cast.toString(args.DIRECTION);
+      const direction = Cast.toString(args.DIRECTION);
       switch (direction) {
         case "up":
           return !!(scrollY < 0);
@@ -539,7 +537,7 @@
     }
 
     mouseWheelTravel(args) {
-      const direction = Scratch.Cast.toString(args.DIRECTION);
+      const direction = Cast.toString(args.DIRECTION);
       switch (direction) {
         case "up":
           return scrollDistanceUp;
@@ -553,8 +551,8 @@
     }
 
     setMouseTravel(args) {
-      const direction = Scratch.Cast.toString(args.DIRECTION);
-      const value = Scratch.Cast.toNumber(args.VALUE);
+      const direction = Cast.toString(args.DIRECTION);
+      const value = Cast.toNumber(args.VALUE);
       switch (direction) {
         case "up":
           return (scrollDistanceUp = value);
@@ -577,7 +575,7 @@
     }
 
     setCur(args) {
-      const newCursor = Scratch.Cast.toString(args.cur);
+      const newCursor = Cast.toString(args.cur);
       // Prevent setting cursor to "url(...), default" from causing fetch.
       if (this.cursors.includes(newCursor) || newCursor === "none") {
         nativeCursor = newCursor;

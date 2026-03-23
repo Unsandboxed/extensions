@@ -19,10 +19,7 @@
    * if you're not familiar with Blockly or the vm.
    */
 
-  const vm = Scratch.vm;
-  const Unsandboxed = Scratch.UnsandboxedMod;
-  const Cast = Unsandboxed.Util.Cast;
-
+  const Cast = Scratch.UnsandboxedMod.Cast;
   const translate = Scratch.translate;
 
   /**
@@ -30,9 +27,14 @@
    * This'll be built-in and we'll provide a shape for it too.
    */
   class UnsandboxedTargetType {
+    /**
+     * The type identifier of this custom type.
+     * @type {string}
+     */
     static TYPE_ID = "unsandboxed_target";
 
     constructor(target) {
+      // todo: don't call the vm here from the document
       target = vm.runtime.getTargetById(target?.id);
       if (target) {
         this.disposed = false;
@@ -80,6 +82,68 @@
    * Unsandboxed blocks for clones.
    */
   class UnsandboxedClonesPlus {
+    static UnsandboxedTargetType = UnsandboxedTargetType;
+
+    /**
+     * The extension identifier of this block package.
+     * @type {string}
+     */
+    static extensionId = "usbClonesPlus";
+
+    /**
+     * Icon svg to be displayed on the category selector, encoded as a data URI
+     * @type {string}
+     */
+    // eslint-disable-next-line max-len
+    static iconURI = "data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHdpZHRoPSIyNTEuOTkwNTgiIGhlaWdodD0iMjUxLjk5MDU4IiB2aWV3Qm94PSIwLDAsMjUxLjk5MDU4LDI1MS45OTA1OCI+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTE3NC4wMDQ3MSwtMjQuMDA0NzEpIj48ZyBzdHJva2U9Im5vbmUiIHN0cm9rZS1taXRlcmxpbWl0PSIxMCI+PHBhdGggZD0iTTE3NC4wMDQ3MSwxNTBjMCwtNjkuNTg1MjcgNTYuNDEwMDIsLTEyNS45OTUyOSAxMjUuOTk1MjksLTEyNS45OTUyOWM2OS41ODUyNywwIDEyNS45OTUyOSw1Ni40MTAwMiAxMjUuOTk1MjksMTI1Ljk5NTI5YzAsNjkuNTg1MjcgLTU2LjQxMDAyLDEyNS45OTUyOSAtMTI1Ljk5NTI5LDEyNS45OTUyOWMtNjkuNTg1MjcsMCAtMTI1Ljk5NTI5LC01Ni40MTAwMiAtMTI1Ljk5NTI5LC0xMjUuOTk1Mjl6IiBmaWxsPSIjY2Y4YjE3IiBmaWxsLXJ1bGU9Im5vbnplcm8iIHN0cm9rZS13aWR0aD0iMCIgc3Ryb2tlLWxpbmVjYXA9ImJ1dHQiLz48cGF0aCBkPSJNMTg0LjM1ODk5LDE1MGMwLC02My44NjY3NyA1MS43NzQyNSwtMTE1LjY0MTAyIDExNS42NDEwMiwtMTE1LjY0MTAyYzYzLjg2Njc3LDAgMTE1LjY0MTAyLDUxLjc3NDI1IDExNS42NDEwMiwxMTUuNjQxMDJjMCw2My44NjY3NyAtNTEuNzc0MjUsMTE1LjY0MTAyIC0xMTUuNjQxMDIsMTE1LjY0MTAyYy02My44NjY3NywwIC0xMTUuNjQxMDIsLTUxLjc3NDI1IC0xMTUuNjQxMDIsLTExNS42NDEwMnoiIGZpbGw9IiNmZmFiMTkiIGZpbGwtcnVsZT0ibm9uemVybyIgc3Ryb2tlLXdpZHRoPSIwIiBzdHJva2UtbGluZWNhcD0iYnV0dCIvPjxwYXRoIGQ9Ik0zMzEuNTE4ODUsMTMxLjk3MTc3YzAsLTIuMzAzNTggMC45MTUxNiwtNC41MTI4IDIuNTQ0MTMsLTYuMTQxNThjMS42Mjg5NywtMS42Mjg3OCAzLjgzODI5LC0yLjU0MzY5IDYuMTQxODcsLTIuNTQzNDJoMTQuOTkxdi0xNC45OTJjMCwtNC43OTY4NyAzLjg4ODYzLC04LjY4NTUgOC42ODU1LC04LjY4NTVjNC43OTY4NywwIDguNjg1NSwzLjg4ODYzIDguNjg1NSw4LjY4NTV2MTQuOTkyaDE0Ljk5MWM0Ljc5NjYsMCA4LjY4NSwzLjg4ODQxIDguNjg1LDguNjg1YzAsNC43OTY2IC0zLjg4ODQsOC42ODUgLTguNjg1LDguNjg1aC0xNC45OTF2MTQuOTkyYzAsNC43OTY2IC0zLjg4ODQsOC42ODUgLTguNjg1LDguNjg1Yy00Ljc5NjYsMCAtOC42ODUsLTMuODg4NCAtOC42ODUsLTguNjg1di0xNC45OTJoLTE0Ljk5MmMtMi4zMDM1OCwwLjAwMDI3IC00LjUxMjksLTAuOTE0NjUgLTYuMTQxODcsLTIuNTQzNDNjLTEuNjI4OTcsLTEuNjI4NzggLTIuNTQ0MTMsLTMuODM3OTkgLTIuNTQ0MTMsLTYuMTQxNTd6IiBmaWxsPSIjZmZmZmZmIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiIHN0cm9rZS13aWR0aD0iMSIgc3Ryb2tlLWxpbmVjYXA9InNxdWFyZSIvPjxwYXRoIGQ9Ik0zNjAuODAzMTQsMjQ1LjgyMjM0Yy0xLjU0NDc5LDAgLTMuMDk0NSwtMC41OTAzNyAtNC4yNzUyMywtMS43NzExbC0zNy4yMDUwMSwtMzcuMjAzNzlsLTE2LjcyOTg1LDE2LjcyNzkzYy00LjcyMjkzLDQuNzIyOTMgLTEyLjM4Nzg1LDQuNzIyOTMgLTE3LjEwNTg2LDBsLTE3LjExMDc3LC0xNy4xMTA3OGMtNC43MTk4OCwtNC43MjUyMSAtNC43MTk4OCwtMTIuMzgwNjQgMCwtMTcuMTA1ODVsNS4wNTk1NywtNS4wNTk1N2MtMC40NDc4MSwwLjAxNzgxIC0wLjg5NzkxLDAuMDI2NzYgLTEuMzUwMTEsMC4wMjY3Yy0xOC4zNzI5MywtMC4wMDI3MSAtMzMuMjY0OTIsLTE0Ljg5OTEyIC0zMy4yNjIyMSwtMzMuMjcyMDVjMC4wMDAwNywtMC40NDg0NyAwLjAwOSwtMC44OTQ4NiAwLjAyNjY1LC0xLjMzOTAxYy04LjUxNjkxLDYuMDg4OTMgLTE3LjE3MjU1LDIuNTk5MzEgLTIwLjE3NzgyLC04Ljg5ODkybC05LjA2NzA0LC0zNC43MDg2MWMtMC45MTE4MiwtMy40ODg2NSAtMC45OTUwMSwtNi42NDcxNCAtMC4zNzIxMiwtOS4zNDU4bC0zLjY2Njk4LC0zLjY2Njg2Yy0xLjU1MDA3LC0xLjUyMjggLTIuMTYzODEsLTMuNzYwMjUgLTEuNjA3NjIsLTUuODYwOGMwLjU1NjE4LC0yLjEwMDU1IDIuMTk2NzQsLTMuNzQxMTEgNC4yOTcyOSwtNC4yOTcyOWMyLjEwMDU1LC0wLjU1NjE4IDQuMzM4LDAuMDU3NTUgNS44NjA4LDEuNjA3NjJsMy4yNTA3MywzLjI1MDczYzIuNzU4MjEsLTAuOTA5NDEgNi4wODczLC0xLjA2MjQxIDkuODQwNjQsLTAuMzAzODJsMzguMTAzMjIsNy42OTkzNmMxMy4wNDcwOSwyLjYzNjk3IDE2LjAxODYsMTIuNDkxMTYgNi42MDcxOCwyMS45MDI1OGwtMC43MTAxOSwwLjcxMDA3YzAuMjk0ODMsLTAuMDA3NjggMC41OTA2MSwtMC4wMTE1MiAwLjg4NzMsLTAuMDExNDdjMTguMzcyOTMsMC4wMDI3MSAzMy4yNjQ5MiwxNC44OTkxMiAzMy4yNjIyMSwzMy4yNzIwNWMtMC4wMDAwNywwLjQ0ODg5IC0wLjAwOTAzLDAuODk1NyAtMC4wMjY3LDEuMzQwMjdsNS44MTIyOSwtNS44MTIzYzQuNzI1NzgsLTQuNzIzMTUgMTIuMzg1LC00LjcyMzE1IDE3LjExMDc4LDBsMTcuMTEwNzcsMTcuMTA1ODZjNC43MjMxNiw0LjcyNTc4IDQuNzIzMTYsMTIuMzg1IDAsMTcuMTEwNzhsLTE3LjQ5MzA2LDE3LjQ5MTA1bDM3LjIwNjM3LDM3LjIwNjM3YzEuNzI1NTksMS43Mjk2OSAyLjI0MDU5LDQuMzI3OTMgMS4zMDUyMyw2LjU4NTA1Yy0wLjkzNTM1LDIuMjU3MTIgLTMuMTM3MjEsMy43Mjk0OSAtNS41ODA0NywzLjczMTYxeiIgZmlsbD0iI2ZmZmZmZiIgZmlsbC1ydWxlPSJub256ZXJvIiBzdHJva2Utd2lkdGg9IjAiIHN0cm9rZS1saW5lY2FwPSJidXR0Ii8+PC9nPjwvZz48L3N2Zz48IS0tcm90YXRpb25DZW50ZXI6MTI1Ljk5NTI5MDA1NDUwMTg1OjEyNS45OTUyOTAwNTQ1MDE5NS0tPg==";
+
+    constructor() {
+      /**
+       * The Scratch Virtual Machine instance.
+       * @type {VirtualMachine}
+       */
+      this.vm = Scratch.vm;
+
+      /**
+       * The runtime instantiating this block package.
+       * @type {Runtime}
+       */
+      this.runtime = this.vm.runtime;
+
+      this.runtime.on("targetWasCreated", (newTarget) => {
+        this.runtime.startHats(`${this.extId}_whenCloneStarts`, {}, newTarget, {
+          clone: new UnsandboxedTargetType(newTarget)
+        });
+        this.runtime.startHats(`${this.extId}_whenCloneOfSpriteStarts`, {}, newTarget.sprite.clones[0], {
+          clone: new UnsandboxedTargetType(newTarget)
+        });
+      });
+          
+      // Register our custom target type.
+      this.runtime.customDataTypes.setType(UnsandboxedTargetType.TYPE_ID, UnsandboxedTargetType, [
+        (pointInstance, _serialization$sb3) => pointInstance.toJSON(),
+        (possiblePoint, _serialization$sb3) => UnsandboxedTargetType.from(possiblePoint),
+        {
+          serializeForMonitor: (target) => target.toString(),
+          serializeForListRow: (target) => target.toString(),
+          highlight: (highlighter, target, goog) => {
+            const node = goog.dom.createElement('span'), comma = goog.dom.createElement('span');
+            comma.textContent = ',';
+            const state = (target.disposed ? "Deleted " : "");
+            const targetType = (target.isOriginal) ? "Sprite" : "Clone";
+            node.appendChild(highlighter.highlightSingle(`<`, 'ctype.open'));
+            node.appendChild(highlighter.highlightSingle(`${state}${targetType}`, 'boolean'));
+            node.appendChild(highlighter.highlightSingle(`: `, 'string'));
+            node.appendChild(highlighter.highlightSingle('(', 'object.openBracket'));
+            node.appendChild(highlighter.highlight(target.targetName, 'string'));
+            node.appendChild(highlighter.highlightSingle(')', 'object.closeBracket'));
+            node.appendChild(highlighter.highlightSingle('>', 'ctype.close'));
+            return node;
+          },
+        },
+      ]);
+    }
+
     /**
      * When the workspace is re-opened, none of the
      * variable menus will be updated to show the
@@ -132,27 +196,13 @@
       return spriteNames;
     }
 
-    constructor() {
-      this.runtime = vm.runtime;
-
-      this.extId = "lmsClonesPlus2";
-      this.extIcon =
-        "data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHdpZHRoPSIyNTEuOTkwNTgiIGhlaWdodD0iMjUxLjk5MDU4IiB2aWV3Qm94PSIwLDAsMjUxLjk5MDU4LDI1MS45OTA1OCI+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTE3NC4wMDQ3MSwtMjQuMDA0NzEpIj48ZyBzdHJva2U9Im5vbmUiIHN0cm9rZS1taXRlcmxpbWl0PSIxMCI+PHBhdGggZD0iTTE3NC4wMDQ3MSwxNTBjMCwtNjkuNTg1MjcgNTYuNDEwMDIsLTEyNS45OTUyOSAxMjUuOTk1MjksLTEyNS45OTUyOWM2OS41ODUyNywwIDEyNS45OTUyOSw1Ni40MTAwMiAxMjUuOTk1MjksMTI1Ljk5NTI5YzAsNjkuNTg1MjcgLTU2LjQxMDAyLDEyNS45OTUyOSAtMTI1Ljk5NTI5LDEyNS45OTUyOWMtNjkuNTg1MjcsMCAtMTI1Ljk5NTI5LC01Ni40MTAwMiAtMTI1Ljk5NTI5LC0xMjUuOTk1Mjl6IiBmaWxsPSIjY2Y4YjE3IiBmaWxsLXJ1bGU9Im5vbnplcm8iIHN0cm9rZS13aWR0aD0iMCIgc3Ryb2tlLWxpbmVjYXA9ImJ1dHQiLz48cGF0aCBkPSJNMTg0LjM1ODk5LDE1MGMwLC02My44NjY3NyA1MS43NzQyNSwtMTE1LjY0MTAyIDExNS42NDEwMiwtMTE1LjY0MTAyYzYzLjg2Njc3LDAgMTE1LjY0MTAyLDUxLjc3NDI1IDExNS42NDEwMiwxMTUuNjQxMDJjMCw2My44NjY3NyAtNTEuNzc0MjUsMTE1LjY0MTAyIC0xMTUuNjQxMDIsMTE1LjY0MTAyYy02My44NjY3NywwIC0xMTUuNjQxMDIsLTUxLjc3NDI1IC0xMTUuNjQxMDIsLTExNS42NDEwMnoiIGZpbGw9IiNmZmFiMTkiIGZpbGwtcnVsZT0ibm9uemVybyIgc3Ryb2tlLXdpZHRoPSIwIiBzdHJva2UtbGluZWNhcD0iYnV0dCIvPjxwYXRoIGQ9Ik0zMzEuNTE4ODUsMTMxLjk3MTc3YzAsLTIuMzAzNTggMC45MTUxNiwtNC41MTI4IDIuNTQ0MTMsLTYuMTQxNThjMS42Mjg5NywtMS42Mjg3OCAzLjgzODI5LC0yLjU0MzY5IDYuMTQxODcsLTIuNTQzNDJoMTQuOTkxdi0xNC45OTJjMCwtNC43OTY4NyAzLjg4ODYzLC04LjY4NTUgOC42ODU1LC04LjY4NTVjNC43OTY4NywwIDguNjg1NSwzLjg4ODYzIDguNjg1NSw4LjY4NTV2MTQuOTkyaDE0Ljk5MWM0Ljc5NjYsMCA4LjY4NSwzLjg4ODQxIDguNjg1LDguNjg1YzAsNC43OTY2IC0zLjg4ODQsOC42ODUgLTguNjg1LDguNjg1aC0xNC45OTF2MTQuOTkyYzAsNC43OTY2IC0zLjg4ODQsOC42ODUgLTguNjg1LDguNjg1Yy00Ljc5NjYsMCAtOC42ODUsLTMuODg4NCAtOC42ODUsLTguNjg1di0xNC45OTJoLTE0Ljk5MmMtMi4zMDM1OCwwLjAwMDI3IC00LjUxMjksLTAuOTE0NjUgLTYuMTQxODcsLTIuNTQzNDNjLTEuNjI4OTcsLTEuNjI4NzggLTIuNTQ0MTMsLTMuODM3OTkgLTIuNTQ0MTMsLTYuMTQxNTd6IiBmaWxsPSIjZmZmZmZmIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiIHN0cm9rZS13aWR0aD0iMSIgc3Ryb2tlLWxpbmVjYXA9InNxdWFyZSIvPjxwYXRoIGQ9Ik0zNjAuODAzMTQsMjQ1LjgyMjM0Yy0xLjU0NDc5LDAgLTMuMDk0NSwtMC41OTAzNyAtNC4yNzUyMywtMS43NzExbC0zNy4yMDUwMSwtMzcuMjAzNzlsLTE2LjcyOTg1LDE2LjcyNzkzYy00LjcyMjkzLDQuNzIyOTMgLTEyLjM4Nzg1LDQuNzIyOTMgLTE3LjEwNTg2LDBsLTE3LjExMDc3LC0xNy4xMTA3OGMtNC43MTk4OCwtNC43MjUyMSAtNC43MTk4OCwtMTIuMzgwNjQgMCwtMTcuMTA1ODVsNS4wNTk1NywtNS4wNTk1N2MtMC40NDc4MSwwLjAxNzgxIC0wLjg5NzkxLDAuMDI2NzYgLTEuMzUwMTEsMC4wMjY3Yy0xOC4zNzI5MywtMC4wMDI3MSAtMzMuMjY0OTIsLTE0Ljg5OTEyIC0zMy4yNjIyMSwtMzMuMjcyMDVjMC4wMDAwNywtMC40NDg0NyAwLjAwOSwtMC44OTQ4NiAwLjAyNjY1LC0xLjMzOTAxYy04LjUxNjkxLDYuMDg4OTMgLTE3LjE3MjU1LDIuNTk5MzEgLTIwLjE3NzgyLC04Ljg5ODkybC05LjA2NzA0LC0zNC43MDg2MWMtMC45MTE4MiwtMy40ODg2NSAtMC45OTUwMSwtNi42NDcxNCAtMC4zNzIxMiwtOS4zNDU4bC0zLjY2Njk4LC0zLjY2Njg2Yy0xLjU1MDA3LC0xLjUyMjggLTIuMTYzODEsLTMuNzYwMjUgLTEuNjA3NjIsLTUuODYwOGMwLjU1NjE4LC0yLjEwMDU1IDIuMTk2NzQsLTMuNzQxMTEgNC4yOTcyOSwtNC4yOTcyOWMyLjEwMDU1LC0wLjU1NjE4IDQuMzM4LDAuMDU3NTUgNS44NjA4LDEuNjA3NjJsMy4yNTA3MywzLjI1MDczYzIuNzU4MjEsLTAuOTA5NDEgNi4wODczLC0xLjA2MjQxIDkuODQwNjQsLTAuMzAzODJsMzguMTAzMjIsNy42OTkzNmMxMy4wNDcwOSwyLjYzNjk3IDE2LjAxODYsMTIuNDkxMTYgNi42MDcxOCwyMS45MDI1OGwtMC43MTAxOSwwLjcxMDA3YzAuMjk0ODMsLTAuMDA3NjggMC41OTA2MSwtMC4wMTE1MiAwLjg4NzMsLTAuMDExNDdjMTguMzcyOTMsMC4wMDI3MSAzMy4yNjQ5MiwxNC44OTkxMiAzMy4yNjIyMSwzMy4yNzIwNWMtMC4wMDAwNywwLjQ0ODg5IC0wLjAwOTAzLDAuODk1NyAtMC4wMjY3LDEuMzQwMjdsNS44MTIyOSwtNS44MTIzYzQuNzI1NzgsLTQuNzIzMTUgMTIuMzg1LC00LjcyMzE1IDE3LjExMDc4LDBsMTcuMTEwNzcsMTcuMTA1ODZjNC43MjMxNiw0LjcyNTc4IDQuNzIzMTYsMTIuMzg1IDAsMTcuMTEwNzhsLTE3LjQ5MzA2LDE3LjQ5MTA1bDM3LjIwNjM3LDM3LjIwNjM3YzEuNzI1NTksMS43Mjk2OSAyLjI0MDU5LDQuMzI3OTMgMS4zMDUyMyw2LjU4NTA1Yy0wLjkzNTM1LDIuMjU3MTIgLTMuMTM3MjEsMy43Mjk0OSAtNS41ODA0NywzLjczMTYxeiIgZmlsbD0iI2ZmZmZmZiIgZmlsbC1ydWxlPSJub256ZXJvIiBzdHJva2Utd2lkdGg9IjAiIHN0cm9rZS1saW5lY2FwPSJidXR0Ii8+PC9nPjwvZz48L3N2Zz48IS0tcm90YXRpb25DZW50ZXI6MTI1Ljk5NTI5MDA1NDUwMTg1OjEyNS45OTUyOTAwNTQ1MDE5NS0tPg==";
-
-      this.runtime.on("targetWasCreated", (newTarget) => {
-        this.runtime.startHats(`${this.extId}_whenCloneStarts`, {}, newTarget, {
-          clone: new UnsandboxedTargetType(newTarget)
-        });
-        this.runtime.startHats(`${this.extId}_whenCloneOfSpriteStarts`, {}, newTarget.sprite.clones[0], {
-          clone: new UnsandboxedTargetType(newTarget)
-        });
-      });
-    }
-
+    /**
+     * @returns {object} metadata for this extension and its blocks.
+     */
     getInfo() {
       return {
-        id: this.extId,
-        menuIconURI: this.extIcon,
+        id: UnsandboxedClonesPlus.extensionId,
+        menuIconURI: UnsandboxedClonesPlus.iconURI,
         name: "Clones",
         color1: "#FFAB19",
         color2: "#EC9C13",
@@ -194,9 +244,7 @@
             },
             isEdgeActivated: false,
           },
-
           "---",
-
           {
             opcode: "createCloneScope",
             blockType: Scratch.BlockType.CONDITIONAL,
@@ -233,9 +281,7 @@
               },
             }
           },
-
           "---",
-
           {
             opcode: "getThisTarget",
             blockType: Scratch.BlockType.REPORTER,
@@ -287,9 +333,7 @@
               },
             },
           },
-
           "---",
-
           {
             opcode: "getIsType",
             blockType: Scratch.BlockType.BOOLEAN,
@@ -343,9 +387,7 @@
               },
             },
           },
-
           "---",
-
           {
             opcode: "clonesTouchingWithVar",
             blockType: Scratch.BlockType.ARRAY,
@@ -390,9 +432,7 @@
               },
             },
           },
-
           "---",
-
           {
             opcode: "setProperty",
             blockType: Scratch.BlockType.COMMAND,
@@ -468,9 +508,7 @@
               },
             },
           },
-
           "---",
-
           {
             opcode: "deleteClones",
             blockType: Scratch.BlockType.COMMAND,
@@ -497,9 +535,7 @@
               },
             },
           },
-
           "---",
-
           {
             opcode: "cloneCount",
             blockType: Scratch.BlockType.REPORTER,
@@ -560,7 +596,7 @@
     _getTargetsWithVar(target, variableId, value) {
       const clones = target.sprite.clones.filter((clone) => {
         const variable = clone.lookupVariableById(variableId);
-        return variable && Scratch.Cast.compare(variable.value, value) === 0;
+        return variable && Cast.compare(variable.value, value) === 0;
       });
 
       return clones;
@@ -672,7 +708,7 @@
         return false;
       }
 
-      return Scratch.vm.renderer.isTouchingDrawables(
+      return this.vm.renderer.isTouchingDrawables(
         util.target.drawableID,
         drawableCandidates
       );
@@ -733,7 +769,7 @@
 
       let touchingDrawables = [];
       for (const clone of clones) {
-        const touching = Scratch.vm.renderer.isTouchingDrawables(
+        const touching = this.vm.renderer.isTouchingDrawables(
           util.target.drawableID,
           [clone.drawableID]
         );
@@ -759,7 +795,7 @@
       let touchingDrawables = [];
 
       for (const clone of clones) {
-        const touching = Scratch.vm.renderer.isTouchingDrawables(
+        const touching = this.vm.renderer.isTouchingDrawables(
           target.drawableID,
           [clone.drawableID]
         );
@@ -951,7 +987,7 @@
       this.runtime.threadMap.set(newThread.getId(), newThread);
 
       // tw: compile new threads. Do not attempt to compile monitor threads.
-      if (runtime.compilerOptions.enabled) {
+      if (this.runtime.compilerOptions.enabled) {
         this.tryCompile(newThread);
       }
 
@@ -1202,30 +1238,6 @@
       return spriteNames;
     }
   }
-
-  // Register our custom target type.
-  vm.runtime.customDataTypes.setType(UnsandboxedTargetType.TYPE_ID, UnsandboxedTargetType, [
-    (pointInstance, _serialization$sb3) => pointInstance.toJSON(),
-    (possiblePoint, _serialization$sb3) => UnsandboxedTargetType.from(possiblePoint),
-    {
-      serializeForMonitor: (target) => target.toString(),
-      serializeForListRow: (target) => target.toString(),
-      highlight: (highlighter, target, goog) => {
-        const node = goog.dom.createElement('span'), comma = goog.dom.createElement('span');
-        comma.textContent = ',';
-        const state = (target.disposed ? "Deleted " : "");
-        const targetType = (target.isOriginal) ? "Sprite" : "Clone";
-        node.appendChild(highlighter.highlightSingle(`<`, 'ctype.open'));
-        node.appendChild(highlighter.highlightSingle(`${state}${targetType}`, 'boolean'));
-        node.appendChild(highlighter.highlightSingle(`: `, 'string'));
-        node.appendChild(highlighter.highlightSingle('(', 'object.openBracket'));
-        node.appendChild(highlighter.highlight(target.targetName, 'string'));
-        node.appendChild(highlighter.highlightSingle(')', 'object.closeBracket'));
-        node.appendChild(highlighter.highlightSingle('>', 'ctype.close'));
-        return node;
-      },
-    },
-  ]);
 
   Scratch.extensions.register(new UnsandboxedClonesPlus());
 })(Scratch);

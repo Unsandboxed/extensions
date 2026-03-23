@@ -1,40 +1,49 @@
-/** 
- * NOTES: Will add comments explaining what functions do.
- */
-
 (function (Scratch) {
   "use strict";
+
+  /**
+   * Code adapted from "Multi Touch" by Skyhigh173
+   * https://github.com/TurboWarp/extensions/pull/1432/
+   */
+
+  const Cast = Scratch.UnsandboxedMod.Cast;
+  const MathUtil = Scratch.UnsandboxedMod.Math;
+  const translate = Scratch.translate;
 
   /**
    * Unsandboxed blocks for multitouch.
    * @constructor
    */
   class UnsandboxedMultiTouchBlocks {
+    /**
+     * The extension identifier of this block package.
+     * @type {string}
+     */
+    static extensionId = "usbTouch";
+
     constructor() {
       /**
-       * The extension identifier of this block package.
-       */
-      this.extId = "usbTouch";
-
-      /**
        * The Scratch Virtual Machine instance.
+       * @type {VirtualMachine}
        */
       this.vm = Scratch.vm;
 
       /**
        * The runtime instantiating this block package.
+       * @type {Runtime}
        */
       this.runtime = this.vm.runtime;
+
+      /**
+       * The Scratch WebGL renderer instance.
+       * @type {RenderWebGL}
+       */
+      this.renderer = this.runtime.renderer;
 
       /**
        * @type {HTMLDivElement}
        */
       this.canvasDiv = null;
-
-      /**
-       * @type {HTMLCanvasElement}
-       */
-      this.canvas = null;
 
       /**
        * @type {Array.<Touch>}
@@ -49,70 +58,128 @@
       this._setup();
     }
 
-    get bound() {
-      return this.canvas.getBoundingClientRect();
+    // Bounding rect coordinates are in client coordinates, meaning that they
+    // are in pixels relative to the upper left corner of the visible browser
+    // window.  These coordinates change when you scroll the browser window.
+    get boundingRect() {
+      return this.renderer.canvas.getBoundingClientRect();
     }
 
-    _clamp(min, x, max) {
-      return Math.max(Math.min(x, max), min);
-    }
     _scale(x, sRmin, sRmax, tRmin, tRmax) {
       return (tRmax - tRmin) / (sRmax - sRmin) * (x - sRmin) + tRmin;
     }
 
     _propMap = {
-      // map client coord to scratch coord
-      _x: (clientX) => this._clamp(-240, this._scale(clientX, this.bound.left, this.bound.right, -240, 240), 240),
-      _y: (clientY) => this._clamp(-180, this._scale(clientY, this.bound.bottom, this.bound.top, -180, 180), 180),
+      // Clamp coordinates to the stage bounds.
+      // TODO: Will the size of the stage affect this?
+      _x: (clientX) => MathUtil.clamp(
+        -240, 
+        this._scale(clientX, this.bound.left, this.bound.right, -240, 240), 
+        240
+      ),
+      _y: (clientY) => MathUtil.clamp(
+        -180,
+        this._scale(clientY, this.bound.bottom, this.bound.top, -180, 180),
+        180
+      ),
 
-      x: (t) => this._propMap._x(t.clientX),
-      y: (t) => this._propMap._y(t.clientY),
-      dx: (t) => (this._propMap._x(t.clientX) - this._propMap._x(t.prevX)),
-      dy: (t) => (this._propMap._y(t.clientY) - this._propMap._y(t.prevY)),
-      sx: (t) => this._propMap.dx(t) / ((t.nowDate - t.prevDate) / 1000),
-      sy: (t) => this._propMap.dy(t) / ((t.nowDate - t.prevDate) / 1000),
-      duration: (t) => (Date.now() - t.date) / 1000,
-      force: (t) => t.force,
+      x: (prop) => this._propMap._x(t.clientX),
+      y: (prop) => this._propMap._y(t.clientY),
+      duration: (prop) => (Date.now() - t.date) / 1000,
+      force: (prop) => t.force,
     };
+
+    /**
+     * Setup multitouch on this runtime.
+     */
+    _setup() {
+      this.canvasDiv = this.renderer.canvas.parentElement;
+
+      /**
+       * @param {TouchEvent} event 
+       */
+      const updateTouchList = event => {
+        this._touches = [...event.touches];
+
+        // update position
+        this._touches.forEach(prop => {
+          // if theres a new finger...
+          const index = this._fingers.findIndex(finger => finger?.identifier === prop.identifier);
+          if (index == -1) {
+            this._fingers.push(prop);
+            // extra infos
+            this._fingers.at(-1).date = Date.now();
+            this._fingers.at(-1).prevX = t.clientX;
+            this._fingers.at(-1).prevY = t.clientY;
+            this._fingers.at(-1).prevDate = Date.now();
+            this._fingers.at(-1).nowDate = Date.now();
+          } else {
+            const finger = this._fingers[index];
+            const date = finger.date, oldX = finger.clientX, oldY = finger.clientY, oldDate = finger.nowDate;
+            this._fingers[index] = t;
+            this._fingers[index].date = date;
+            this._fingers[index].prevX = oldX;
+            this._fingers[index].prevY = oldY;
+            this._fingers[index].prevDate = oldDate;
+            this._fingers[index].nowDate = Date.now();
+          };
+        });
+
+        this._fingers.forEach((prop, index) => {
+          // if the finger releases...
+          if (this._touches.findIndex(f => f.identifier === prop?.identifier) == -1) {
+            this._fingers[index] = null;
+          };
+        });
+
+        // clear trailing null values
+        while (this._fingers.length > 0 && this._fingers.at(-1) === null) {
+          this._fingers.pop();
+        };
+      }
+      this.canvasDiv.addEventListener("touchstart", event => updateTouchList(event));
+      this.canvasDiv.addEventListener("touchmove", event => updateTouchList(event));
+      this.canvasDiv.addEventListener("touchend", event => updateTouchList(event));
+    }
 
     /**
      * @returns {object} metadata for this extension and its blocks.
      */
     getInfo() {
       return {
-        id: this.extId,
-        name: Scratch.translate("Touch Control"),
+        id: UnsandboxedMultiTouchBlocks.extensionId,
+        name: translate("Touch Controls"),
         color1: "#5CB1D6",
         blocks: [
           {
             opcode: "touchAvailable",
             blockType: Scratch.BlockType.BOOLEAN,
-            text: Scratch.translate("is touch available?"),
+            text: translate("is touch available?"),
             extensions: ["colours_sensing"],
           },
           {
             opcode: "maxMultiTouch",
             blockType: Scratch.BlockType.REPORTER,
-            text: Scratch.translate("maximum finger count"),
+            text: translate("maximum finger count"),
             extensions: ["colours_sensing"],
           },
           "---",
           {
             opcode: "numOfFingers",
             blockType: Scratch.BlockType.REPORTER,
-            text: Scratch.translate("number of fingers"),
+            text: translate("number of fingers"),
             extensions: ["colours_sensing"],
           },
           {
             opcode: "numOfFingersID",
             blockType: Scratch.BlockType.REPORTER,
-            text: Scratch.translate("number of fingers ID"),
+            text: translate("number of fingers ID"),
             extensions: ["colours_sensing"],
           },
           {
             opcode: "propOfFinger",
             blockType: Scratch.BlockType.REPORTER,
-            text: Scratch.translate("[PROP] of finger [ID]"),
+            text: translate("[PROP] of finger [ID]"),
             arguments: {
               PROP: {
                 type: Scratch.ArgumentType.STRING,
@@ -129,7 +196,7 @@
           {
             opcode: "fingerExists",
             blockType: Scratch.BlockType.BOOLEAN,
-            text: Scratch.translate("finger [ID] exists?"),
+            text: translate("finger [ID] exists?"),
             arguments: {
               ID: {
                 type: Scratch.ArgumentType.NUMBER,
@@ -145,75 +212,23 @@
             /**
              * x: x position
              * y: y position
-             * dx: change of x position compared to previous frame
-             * dy: change of y position compared to previous frame
-             * sx: avg speed x of finger in a second
-             * sy: avg speed y of finger in a second
-             * duration: time since finger press
+             * duration: time since finger pressed
              * force (some devices only): force of finger press
              */
             items: [
-              "x", "y", "dx", "dy", "sx", "sy",
+              "x", "y",
               {
-                text: Scratch.translate("duration"),
+                text: translate("duration"),
                 value: "duration",
               },
               {
-                text: Scratch.translate("force"),
+                text: translate("force"),
                 value: "force",
               }
             ],
           },
         },
       };
-    }
-
-    _setup() {
-      this.canvas = this.runtime.renderer.canvas;
-      this.canvasDiv = this.canvas.parentElement;
-
-      // update touchList
-      /**
-       * @param {TouchEvent} e 
-       */
-      const upd = e => {
-        this._touches = [...e.touches];
-        // update position
-        this._touches.forEach(t => {
-          // if theres a new finger...
-          const idx = this._fingers.findIndex(f => f?.identifier === t.identifier);
-          if (idx == -1) {
-            this._fingers.push(t);
-            // extra infos
-            this._fingers.at(-1).date = Date.now();
-            this._fingers.at(-1).prevX = t.clientX;
-            this._fingers.at(-1).prevY = t.clientY;
-            this._fingers.at(-1).prevDate = Date.now();
-            this._fingers.at(-1).nowDate = Date.now();
-          } else {
-            const finger = this._fingers[idx];
-            const date = finger.date, oldX = finger.clientX, oldY = finger.clientY, oldDate = finger.nowDate;
-            this._fingers[idx] = t;
-            this._fingers[idx].date = date;
-            this._fingers[idx].prevX = oldX;
-            this._fingers[idx].prevY = oldY;
-            this._fingers[idx].prevDate = oldDate;
-            this._fingers[idx].nowDate = Date.now();
-          }
-        })
-        this._fingers.forEach((t, index) => {
-          // if the finger releases...
-          if (this._touches.findIndex(f => f.identifier === t?.identifier) == -1) {
-            this._fingers[index] = null;
-          }
-        })
-        // clear trailing null values
-        while (this._fingers.length > 0 && this._fingers.at(-1) === null) { this._fingers.pop(); }
-        console.log(this._fingers)
-      }
-      this.canvasDiv.addEventListener("touchstart", e => upd(e));
-      this.canvasDiv.addEventListener("touchmove", e => upd(e));
-      this.canvasDiv.addEventListener("touchend", e => upd(e));
     }
 
     touchAvailable() {
@@ -233,14 +248,15 @@
 
     propOfFinger(args, util) {
       const PROP = this._propMap[PROP];
-      ID = Scratch.Cast.toNumber(ID) - 1;
-      if (ID >= this._fingers.length || this._fingers[ID] === null) return "";
+      const ID = Cast.toNumber(args.ID) - 1;
+      if (ID >= this._fingers.length || this._fingers[ID] === null) return 0;
+
       return PROP(this._fingers[ID]);
     }
 
-    fingerExists({ ID }) {
-      ID = Scratch.Cast.toNumber(ID) - 1;
-      return ID < this._fingers.length && this._fingers[ID] !== null;
+    fingerExists(args) {
+      args.ID = Cast.toNumber(args.ID) - 1;
+      return args.ID < this._fingers.length && this._fingers[args.ID] !== null;
     }
   }
   Scratch.extensions.register(new UnsandboxedMultiTouchBlocks());

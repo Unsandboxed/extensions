@@ -1,25 +1,26 @@
 (function (Scratch) {
   "use strict";
 
+  const translate = Scratch.translate;
+
   /**
    * Unsandboxed blocks for inline code notation.
    * @constructor
    */
   class CommentBlocks {
-    constructor() {
-      /**
-       * The extension identifier of this block package.
-       */
-      this.extId = "comments";
-    }
+    /**
+     * The extension identifier of this block package.
+     * @type {string}
+     */
+    static extensionId = "comments";
 
     /**
      * @returns {object} metadata for this extension and its blocks.
      */
     getInfo() {
       return {
-        id: this.extId,
-        name: Scratch.translate("Comment Blocks"),
+        id: CommentBlocks.extensionId,
+        name: translate("Comment Blocks"),
         color1: "#e4db8c",
         color2: "#c6be79",
         color3: "#a8a167",
@@ -32,7 +33,7 @@
             arguments: {
               COMMENT: {
                 type: Scratch.ArgumentType.STRING,
-                defaultValue: Scratch.translate("comment"),
+                defaultValue: translate("comment"),
                 acceptReporters: false,
               },
             },
@@ -44,7 +45,7 @@
             arguments: {
               COMMENT: {
                 type: Scratch.ArgumentType.STRING,
-                defaultValue: Scratch.translate("comment"),
+                defaultValue: translate("comment"),
                 acceptReporters: false,
               },
             },
@@ -56,7 +57,7 @@
             arguments: {
               COMMENT: {
                 type: Scratch.ArgumentType.STRING,
-                defaultValue: Scratch.translate("comment"),
+                defaultValue: translate("comment"),
                 acceptReporters: false,
               },
             },
@@ -69,7 +70,7 @@
             arguments: {
               COMMENT: {
                 type: Scratch.ArgumentType.STRING,
-                defaultValue: Scratch.translate("comment"),
+                defaultValue: translate("comment"),
                 acceptReporters: false,
               },
               INPUT: {
