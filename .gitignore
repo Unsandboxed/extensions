@@ -1,0 +1,7 @@
+# npm
+node_modules
+
+# Popular editors
+.vscode
+.idea
+*.sublime
