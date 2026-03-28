@@ -1,0 +1,26 @@
+{
+  "name": "extensions",
+  "version": "1.0.0",
+  "description": "Unsandboxed's extension library",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "dev": "node development/server.js",
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Unsandboxed/extensions.git"
+  },
+  "author": "Unsandboxed",
+  "license": "MIT AND LGPL-3.0-only AND GPL-3.0-only AND CC-BY-SA-4.0 AND CC-BY-4.0 AND CC-BY-2.5 AND CC0-1.0 AND Apache-2.0 AND MPL-2.0 AND BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/Unsandboxed/extensions/issues"
+  },
+  "homepage": "https://github.com/Unsandboxed/extensions#readme",
+  "dependencies": {
+    "express": "^4.21.1"
+  }
+}
