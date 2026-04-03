@@ -3,636 +3,634 @@
  * Will work when I finished reformatting.
  */
 
-(function (Scratch) {
-  "use strict";
+"use strict";
 
-  const translate = Scratch.translate;
+const translate = Scratch.translate;
 
-  const lazilyCreatedCanvas = () => {
-    /** @type {HTMLCanvasElement} */
-    let canvas = null;
-    /** @type {CanvasRenderingContext2D} */
-    let ctx = null;
-    /**
-     * @param {number} width
-     * @param {number} height
-     * @returns {[HTMLCanvasElement, CanvasRenderingContext2D]}
-     */
-    return (width, height) => {
-      if (!canvas) {
-        canvas = document.createElement("canvas");
-        ctx = canvas.getContext("2d");
-        if (!ctx) {
-          throw new Error("Could not get 2d rendering context");
-        }
+const lazilyCreatedCanvas = () => {
+  /** @type {HTMLCanvasElement} */
+  let canvas = null;
+  /** @type {CanvasRenderingContext2D} */
+  let ctx = null;
+  /**
+   * @param {number} width
+   * @param {number} height
+   * @returns {[HTMLCanvasElement, CanvasRenderingContext2D]}
+   */
+  return (width, height) => {
+    if (!canvas) {
+      canvas = document.createElement("canvas");
+      ctx = canvas.getContext("2d");
+      if (!ctx) {
+        throw new Error("Could not get 2d rendering context");
       }
-      // Setting canvas size also clears it
-      canvas.width = width;
-      canvas.height = height;
-      return [canvas, ctx];
+    }
+    // Setting canvas size also clears it
+    canvas.width = width;
+    canvas.height = height;
+    return [canvas, ctx];
+  };
+};
+const getRawSkinCanvas = lazilyCreatedCanvas();
+
+/**
+ * @param {RenderWebGL.Skin} skin
+ * @returns {string} A data: URI for the skin.
+ */
+const encodeSkinToURL = (skin) => {
+  const svgSkin = /** @type {RenderWebGL.SVGSkin} */ (skin);
+  if (svgSkin._svgImage) {
+    // This is an SVG skin
+    return svgSkin._svgImage.src;
+  }
+
+  // It's probably a bitmap skin.
+  // The most reliable way to get the bitmap in every runtime is through the silhouette.
+  // This is very slow and could involve reading the texture from the GPU.
+  const silhouette = skin._silhouette;
+  silhouette.unlazy();
+
+  const colorData = silhouette._colorData;
+  const width = silhouette._width;
+  const height = silhouette._height;
+  const imageData = new ImageData(
+    colorData,
+    silhouette._width,
+    silhouette._height
+  );
+  const [canvas, ctx] = getRawSkinCanvas(width, height);
+  ctx.putImageData(imageData, 0, 0);
+  return canvas.toDataURL();
+};
+
+/**
+ * @param {VM.Costume} costume
+ * @param {number} maxWidth
+ * @param {number} maxHeight
+ * @returns {{uri: string, width: number, height: number}}
+ */
+const costumeToCursor = (costume, maxWidth, maxHeight) => {
+  const skin = Scratch.vm.renderer._allSkins[costume.skinId];
+  const imageURI = encodeSkinToURL(skin);
+
+  let width = skin.size[0];
+  let height = skin.size[1];
+  if (width > maxWidth) {
+    height = height * (maxWidth / width);
+    width = maxWidth;
+  }
+  if (height > maxHeight) {
+    width = width * (maxHeight / height);
+    height = maxHeight;
+  }
+  width = Math.round(width);
+  height = Math.round(height);
+
+  // We wrap the encoded image in an <svg>. This lets us do some clever things:
+  //  - We can resize the image without a canvas.
+  //  - We can give the browser an image with more raw pixels than its DPI independent size.
+  // The latter is important so that cursors won't look horrible on high DPI displays. For
+  // example, if the cursor will display at 32x32 in DPI independent units on a 2x high DPI
+  // display, we actually need to send a 64x64 image for it to look good. This lets us do
+  // that automatically.
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">`;
+  svg += `<image href="${imageURI}" width="${width}" height="${height}" />`;
+  svg += "</svg>";
+  // URI encoding usually results in smaller string than base 64 for the types of data we get here.
+  const svgURI = `data:image/svg+xml;,${encodeURIComponent(svg)}`;
+
+  return {
+    uri: svgURI,
+    width,
+    height,
+  };
+};
+
+/** @type {string} */
+let nativeCursor = "default";
+/** @type {null|string} */
+let customCursorImageName = null;
+
+const canvas = Scratch.renderer.canvas;
+/** @type {string} */
+let currentCanvasCursor = nativeCursor;
+const updateCanvasCursor = () => {
+  if (canvas.style.cursor !== currentCanvasCursor) {
+    canvas.style.cursor = currentCanvasCursor;
+  }
+};
+
+// scratch-gui will sometimes reset the cursor when resizing the window or going in/out of fullscreen
+new MutationObserver(updateCanvasCursor).observe(canvas, {
+  attributeFilter: ["style"],
+  attributes: true,
+});
+
+/**
+ * Parse strings like "60x12" or "77,1"
+ * @param {string} string
+ * @returns {[number, number]}
+ */
+const parseTuple = (string) => {
+  const [a, b] = ("" + string).split(/[ ,x]/);
+  return [+a || 0, +b || 0];
+};
+
+/**
+ * @param {string} size eg. "48x84"
+ * @returns {string}
+ */
+const formatUnreliableSize = (size) =>
+  translate(
+    {
+      default: "{size} (unreliable)",
+      description: "[size] is replaced with a size in pixels such as '48x48'",
+    },
+    { size }
+  );
+
+var scrollX = 0;
+var scrollY = 0;
+
+var scrollDistance = 0;
+var scrollDistanceUp = 0;
+var scrollDistanceDown = 0;
+
+const mouse = vm.runtime.ioDevices.mouse;
+let isLocked = false;
+let isPointerLockEnabled = false;
+
+let rect = canvas.getBoundingClientRect();
+window.addEventListener("resize", () => {
+  rect = canvas.getBoundingClientRect();
+});
+
+class UnsandboxedMouseBlocks {
+  _overrideRuntimeFunctions() {
+    const postMouseData = (e, isDown) => {
+      const { movementX, movementY } = e;
+      const { width, height } = rect;
+      const x = mouse._clientX + movementX;
+      const y = mouse._clientY - movementY;
+      mouse._clientX = x;
+      mouse._scratchX = mouse.runtime.stageWidth * (x / width - 0.5);
+      mouse._clientY = y;
+      mouse._scratchY = mouse.runtime.stageWidth * (y / height - 0.5);
+      if (typeof isDown === "boolean") {
+        const data = {
+          button: e.button,
+          isDown,
+        };
+        originalPostIOData(data);
+      }
     };
-  };
-  const getRawSkinCanvas = lazilyCreatedCanvas();
 
-  /**
-   * @param {RenderWebGL.Skin} skin
-   * @returns {string} A data: URI for the skin.
-   */
-  const encodeSkinToURL = (skin) => {
-    const svgSkin = /** @type {RenderWebGL.SVGSkin} */ (skin);
-    if (svgSkin._svgImage) {
-      // This is an SVG skin
-      return svgSkin._svgImage.src;
-    }
-
-    // It's probably a bitmap skin.
-    // The most reliable way to get the bitmap in every runtime is through the silhouette.
-    // This is very slow and could involve reading the texture from the GPU.
-    const silhouette = skin._silhouette;
-    silhouette.unlazy();
-
-    const colorData = silhouette._colorData;
-    const width = silhouette._width;
-    const height = silhouette._height;
-    const imageData = new ImageData(
-      colorData,
-      silhouette._width,
-      silhouette._height
-    );
-    const [canvas, ctx] = getRawSkinCanvas(width, height);
-    ctx.putImageData(imageData, 0, 0);
-    return canvas.toDataURL();
-  };
-
-  /**
-   * @param {VM.Costume} costume
-   * @param {number} maxWidth
-   * @param {number} maxHeight
-   * @returns {{uri: string, width: number, height: number}}
-   */
-  const costumeToCursor = (costume, maxWidth, maxHeight) => {
-    const skin = Scratch.vm.renderer._allSkins[costume.skinId];
-    const imageURI = encodeSkinToURL(skin);
-
-    let width = skin.size[0];
-    let height = skin.size[1];
-    if (width > maxWidth) {
-      height = height * (maxWidth / width);
-      width = maxWidth;
-    }
-    if (height > maxHeight) {
-      width = width * (maxHeight / height);
-      height = maxHeight;
-    }
-    width = Math.round(width);
-    height = Math.round(height);
-
-    // We wrap the encoded image in an <svg>. This lets us do some clever things:
-    //  - We can resize the image without a canvas.
-    //  - We can give the browser an image with more raw pixels than its DPI independent size.
-    // The latter is important so that cursors won't look horrible on high DPI displays. For
-    // example, if the cursor will display at 32x32 in DPI independent units on a 2x high DPI
-    // display, we actually need to send a 64x64 image for it to look good. This lets us do
-    // that automatically.
-    let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">`;
-    svg += `<image href="${imageURI}" width="${width}" height="${height}" />`;
-    svg += "</svg>";
-    // URI encoding usually results in smaller string than base 64 for the types of data we get here.
-    const svgURI = `data:image/svg+xml;,${encodeURIComponent(svg)}`;
-
-    return {
-      uri: svgURI,
-      width,
-      height,
+    const mouseDevice = vm.runtime.ioDevices.mouse;
+    const originalPostIOData = mouseDevice.postData.bind(mouseDevice);
+    mouseDevice.postData = (data) => {
+      if (!isPointerLockEnabled) {
+        return originalPostIOData(data);
+      }
     };
-  };
 
-  /** @type {string} */
-  let nativeCursor = "default";
-  /** @type {null|string} */
-  let customCursorImageName = null;
-
-  const canvas = Scratch.renderer.canvas;
-  /** @type {string} */
-  let currentCanvasCursor = nativeCursor;
-  const updateCanvasCursor = () => {
-    if (canvas.style.cursor !== currentCanvasCursor) {
-      canvas.style.cursor = currentCanvasCursor;
-    }
-  };
-
-  // scratch-gui will sometimes reset the cursor when resizing the window or going in/out of fullscreen
-  new MutationObserver(updateCanvasCursor).observe(canvas, {
-    attributeFilter: ["style"],
-    attributes: true,
-  });
-
-  /**
-   * Parse strings like "60x12" or "77,1"
-   * @param {string} string
-   * @returns {[number, number]}
-   */
-  const parseTuple = (string) => {
-    const [a, b] = ("" + string).split(/[ ,x]/);
-    return [+a || 0, +b || 0];
-  };
-
-  /**
-   * @param {string} size eg. "48x84"
-   * @returns {string}
-   */
-  const formatUnreliableSize = (size) =>
-    translate(
-      {
-        default: "{size} (unreliable)",
-        description: "[size] is replaced with a size in pixels such as '48x48'",
-      },
-      { size }
-    );
-
-  var scrollX = 0;
-  var scrollY = 0;
-  
-  var scrollDistance = 0;
-  var scrollDistanceUp = 0;
-  var scrollDistanceDown = 0;
-
-  const mouse = vm.runtime.ioDevices.mouse;
-  let isLocked = false;
-  let isPointerLockEnabled = false;
-
-  let rect = canvas.getBoundingClientRect();
-  window.addEventListener("resize", () => {
-    rect = canvas.getBoundingClientRect();
-  });
-
-  class MouseCursor {
-    _overrideRuntimeFunctions () {
-      const postMouseData = (e, isDown) => {
-        const { movementX, movementY } = e;
+    const oldStep = vm.runtime._step;
+    vm.runtime._step = function (...args) {
+      const ret = oldStep.call(this, ...args);
+      if (isPointerLockEnabled) {
         const { width, height } = rect;
-        const x = mouse._clientX + movementX;
-        const y = mouse._clientY - movementY;
-        mouse._clientX = x;
-        mouse._scratchX = mouse.runtime.stageWidth * (x / width - 0.5);
-        mouse._clientY = y;
-        mouse._scratchY = mouse.runtime.stageWidth * (y / height - 0.5);
-        if (typeof isDown === "boolean") {
-          const data = {
-            button: e.button,
-            isDown,
-          };
-          originalPostIOData(data);
-        }
-      };
-
-      const mouseDevice = vm.runtime.ioDevices.mouse;
-      const originalPostIOData = mouseDevice.postData.bind(mouseDevice);
-      mouseDevice.postData = (data) => {
-        if (!isPointerLockEnabled) {
-          return originalPostIOData(data);
-        }
-      };
-
-      const oldStep = vm.runtime._step;
-      vm.runtime._step = function (...args) {
-        const ret = oldStep.call(this, ...args);
-        if (isPointerLockEnabled) {
-          const { width, height } = rect;
-          mouse._clientX = width / 2;
-          mouse._clientY = height / 2;
-          mouse._scratchX = 0;
-          mouse._scratchY = 0;
-        }
-        return ret;
-      };
-    }
-
-    constructor() {
-      /**
-       * The extension identifier of this block package.
-       */
-      this.extId = "usbMouse";
-
-      /**
-       * The Scratch Virtual Machine instance.
-       */
-      this.vm = Scratch.vm;
-
-      /**
-       * The runtime instantiating this block package.
-       */
-      this.runtime = this.vm.runtime;
-
-      this.runtime.runtime.on("RUNTIME_DISPOSED", () => {
-        this.setCur({
-          cur: "default",
-        });
-      });
-
-      this.runtime.on("AFTER_EXECUTE", () => {
-        this.scrollY = 0;
-      });
-
-      this.cursors = [
-        "default",
-        "pointer",
-        "move",
-        "grab",
-        "grabbing",
-        "text",
-        "vertical-text",
-        "wait",
-        "progress",
-        "help",
-        "context-menu",
-        "zoom-in",
-        "zoom-out",
-        "crosshair",
-        "cell",
-        "not-allowed",
-        "copy",
-        "alias",
-        "no-drop",
-        "all-scroll",
-        "col-resize",
-        "row-resize",
-        "n-resize",
-        "e-resize",
-        "s-resize",
-        "w-resize",
-        "ne-resize",
-        "nw-resize",
-        "se-resize",
-        "sw-resize",
-        "ew-resize",
-        "ns-resize",
-        "nesw-resize",
-        "nwse-resize",
-      ];
-
-      canvas.addEventListener("wheel", updateScrollValues);
-      function updateScrollValues(event) {
-        scrollX = event.deltaX;
-        scrollY = event.deltaY;
-
-        this.runtime.startHats("usbMouse_whenMouseWheel", {
-          DIRECTION: "any",
-        });
-        if (scrollY > 0) {
-          this.runtime.startHats("usbMouse_whenMouseWheel", {
-            DIRECTION: "down",
-          });
-          scrollDistance--;
-          scrollDistanceDown--;
-        } else if (scrollY < 0) {
-          this.runtime.startHats("usbMouse_whenMouseWheel", {
-            DIRECTION: "up",
-          });
-          scrollDistance++;
-          scrollDistanceUp++;
-        }
+        mouse._clientX = width / 2;
+        mouse._clientY = height / 2;
+        mouse._scratchX = 0;
+        mouse._scratchY = 0;
       }
-      document.addEventListener(
-        "mousedown",
-        (e) => {
-          // @ts-expect-error
-          if (canvas.contains(e.target)) {
-            if (isLocked) {
-              this.postMouseData(e, true);
-            } else if (isPointerLockEnabled) {
-              canvas.requestPointerLock();
-            }
-          }
-        },
-        true
-      );
+      return ret;
+    };
+  }
 
-      document.addEventListener(
-        "mouseup",
-        (e) => {
+  constructor() {
+    /**
+     * The extension identifier of this block package.
+     */
+    this.extId = "usbMouse";
+
+    /**
+     * The Scratch Virtual Machine instance.
+     */
+    this.vm = Scratch.vm;
+
+    /**
+     * The runtime instantiating this block package.
+     */
+    this.runtime = this.vm.runtime;
+
+    this.runtime.runtime.on("RUNTIME_DISPOSED", () => {
+      this.setCur({
+        cur: "default",
+      });
+    });
+
+    this.runtime.on("AFTER_EXECUTE", () => {
+      this.scrollY = 0;
+    });
+
+    this.cursors = [
+      "default",
+      "pointer",
+      "move",
+      "grab",
+      "grabbing",
+      "text",
+      "vertical-text",
+      "wait",
+      "progress",
+      "help",
+      "context-menu",
+      "zoom-in",
+      "zoom-out",
+      "crosshair",
+      "cell",
+      "not-allowed",
+      "copy",
+      "alias",
+      "no-drop",
+      "all-scroll",
+      "col-resize",
+      "row-resize",
+      "n-resize",
+      "e-resize",
+      "s-resize",
+      "w-resize",
+      "ne-resize",
+      "nw-resize",
+      "se-resize",
+      "sw-resize",
+      "ew-resize",
+      "ns-resize",
+      "nesw-resize",
+      "nwse-resize",
+    ];
+
+    canvas.addEventListener("wheel", updateScrollValues);
+    function updateScrollValues(event) {
+      scrollX = event.deltaX;
+      scrollY = event.deltaY;
+
+      this.runtime.startHats("usbMouse_whenMouseWheel", {
+        DIRECTION: "any",
+      });
+      if (scrollY > 0) {
+        this.runtime.startHats("usbMouse_whenMouseWheel", {
+          DIRECTION: "down",
+        });
+        scrollDistance--;
+        scrollDistanceDown--;
+      } else if (scrollY < 0) {
+        this.runtime.startHats("usbMouse_whenMouseWheel", {
+          DIRECTION: "up",
+        });
+        scrollDistance++;
+        scrollDistanceUp++;
+      }
+    }
+    document.addEventListener(
+      "mousedown",
+      (e) => {
+        // @ts-expect-error
+        if (canvas.contains(e.target)) {
           if (isLocked) {
-            this.postMouseData(e, false);
-            // @ts-expect-error
-          } else if (isPointerLockEnabled && canvas.contains(e.target)) {
+            this.postMouseData(e, true);
+          } else if (isPointerLockEnabled) {
             canvas.requestPointerLock();
           }
-        },
-        true
-      );
+        }
+      },
+      true
+    );
 
-      document.addEventListener(
-        "mousemove",
-        (e) => {
-          if (isLocked) {
-            this.postMouseData(e);
-          }
-        },
-        true
-      );
-    
-      document.addEventListener("pointerlockchange", () => {
-        isLocked = document.pointerLockElement === canvas;
-      });
+    document.addEventListener(
+      "mouseup",
+      (e) => {
+        if (isLocked) {
+          this.postMouseData(e, false);
+          // @ts-expect-error
+        } else if (isPointerLockEnabled && canvas.contains(e.target)) {
+          canvas.requestPointerLock();
+        }
+      },
+      true
+    );
 
-      document.addEventListener("pointerlockerror", (e) => {
-        // eslint-disable-next-line no-console
-        console.error("Pointer lock error", e);
-      });
-    }
+    document.addEventListener(
+      "mousemove",
+      (e) => {
+        if (isLocked) {
+          this.postMouseData(e);
+        }
+      },
+      true
+    );
 
-    getInfo() {
-      return {
-        id: this.extId,
-        name: translate("Mouse"),
-        blocks: [
-          {
-            opcode: "whenMouseWheel",
-            blockType: Scratch.BlockType.EVENT,
-            text: translate("when mouse scrolled [DIRECTION]"),
-            isEdgeActivated: false,
-            arguments: {
-              DIRECTION: {
-                type: Scratch.ArgumentType.STRING,
-                menu: "direction",
-              },
+    document.addEventListener("pointerlockchange", () => {
+      isLocked = document.pointerLockElement === canvas;
+    });
+
+    document.addEventListener("pointerlockerror", (e) => {
+      // eslint-disable-next-line no-console
+      console.error("Pointer lock error", e);
+    });
+  }
+
+  getInfo() {
+    return {
+      id: this.extId,
+      name: translate("Mouse"),
+      blocks: [
+        {
+          opcode: "whenMouseWheel",
+          blockType: Scratch.BlockType.EVENT,
+          text: translate("when mouse scrolled [DIRECTION]"),
+          isEdgeActivated: false,
+          arguments: {
+            DIRECTION: {
+              type: Scratch.ArgumentType.STRING,
+              menu: "direction",
             },
-          },
-          {
-            opcode: "getMouseScrolling",
-            blockType: Scratch.BlockType.BOOLEAN,
-            text: translate("mouse scrolling [DIRECTION]?"),
-            disableMonitor: true,
-            arguments: {
-              DIRECTION: {
-                type: Scratch.ArgumentType.STRING,
-                menu: "direction",
-              },
-            },
-          },
-          {
-            opcode: "getMouseWheelDirection",
-            blockType: Scratch.BlockType.REPORTER,
-            text: translate("mouse wheel direction"),
-          },
-          "---",
-          {
-            opcode: "setMouseTravel",
-            blockType: Scratch.BlockType.COMMAND,
-            text: translate("set mouse [DIRECTION] distance to [VALUE]"),
-            arguments: {
-              DIRECTION: {
-                type: Scratch.ArgumentType.STRING,
-                menu: "direction",
-              },
-              VALUE: {
-                type: Scratch.ArgumentType.NUMBER,
-                defaultValue: 0,
-              },
-            },
-          },
-          {
-            opcode: "mouseWheelTravel",
-            blockType: Scratch.BlockType.REPORTER,
-            text: translate("mouse [DIRECTION] distance"),
-            disableMonitor: true,
-            arguments: {
-              DIRECTION: {
-                type: Scratch.ArgumentType.STRING,
-                menu: "direction",
-              },
-            },
-          },
-          "---",
-          {
-            opcode: "setLocked",
-            blockType: Scratch.BlockType.COMMAND,
-            text: translate("set pointer lock [enabled]"),
-            disableMonitor: true,
-            arguments: {
-              enabled: {
-                type: Scratch.ArgumentType.STRING,
-                defaultValue: "true",
-                menu: "enabled",
-              },
-            },
-          },
-          {
-            opcode: "isLocked",
-            blockType: Scratch.BlockType.BOOLEAN,
-            text: translate("is pointer locked?"),
-          },
-          "---",
-          {
-            opcode: "setCur",
-            blockType: Scratch.BlockType.COMMAND,
-            text: translate("set cursor to [cur]"),
-            arguments: {
-              cur: {
-                type: Scratch.ArgumentType.STRING,
-                defaultValue: "pointer",
-                menu: "cursors",
-              },
-            },
-          },
-          {
-            opcode: "setCursorImage",
-            blockType: Scratch.BlockType.COMMAND,
-            text: translate(
-              "set cursor to current costume center: [position] max size: [size]"
-            ),
-            arguments: {
-              position: {
-                type: Scratch.ArgumentType.STRING,
-                defaultValue: "0,0",
-                menu: "imagePositions",
-              },
-              size: {
-                type: Scratch.ArgumentType.STRING,
-                defaultValue: "32x32",
-                menu: "imageSizes",
-              },
-            },
-          },
-          {
-            opcode: "hideCur",
-            blockType: Scratch.BlockType.COMMAND,
-            text: translate("hide cursor"),
-          },
-          {
-            opcode: "getCur",
-            blockType: Scratch.BlockType.REPORTER,
-            text: translate("cursor"),
-          },
-        ],
-        menus: {
-          direction: {
-            acceptReporters: false,
-            items: ["up", "down", "any"],
-          },
-          enabled: {
-            acceptReporters: true,
-            items: [
-              {
-                text: "enabled",
-                value: "true",
-              },
-              {
-                text: "disabled",
-                value: "false",
-              },
-            ],
-          },
-          cursors: {
-            acceptReporters: true,
-            items: this.cursors,
-          },
-          imagePositions: {
-            acceptReporters: true,
-            items: [
-              // [x, y] where x is [0=left, 100=right] and y is [0=top, 100=bottom]
-              { text: translate("top left"), value: "0,0" },
-              { text: translate("top right"), value: "100,0" },
-              { text: translate("bottom left"), value: "0,100" },
-              { text: translate("bottom right"), value: "100,100" },
-              { text: translate("center"), value: "50,50" },
-            ],
-          },
-          imageSizes: {
-            acceptReporters: true,
-            items: [
-              // Some important numbers to keep in mind:
-              // Browsers ignore cursor images >128 in any dimension (https://searchfox.org/mozilla-central/rev/43ee5e789b079e94837a21336e9ce2420658fd19/widget/gtk/nsWindow.cpp#3393-3402)
-              // Browsers may refuse to display a cursor near window borders for images >32 in any dimension
-              { text: "4x4", value: "4x4" },
-              { text: "8x8", value: "8x4" },
-              { text: "12x12", value: "12x12" },
-              { text: "16x16", value: "16x16" },
-              { text: "32x32", value: "32x32" },
-              { text: formatUnreliableSize("48x48"), value: "48x48" },
-              { text: formatUnreliableSize("64x64"), value: "64x64" },
-              { text: formatUnreliableSize("128x128"), value: "128x128" },
-            ],
           },
         },
-      };
-    }
+        {
+          opcode: "getMouseScrolling",
+          blockType: Scratch.BlockType.BOOLEAN,
+          text: translate("mouse scrolling [DIRECTION]?"),
+          disableMonitor: true,
+          arguments: {
+            DIRECTION: {
+              type: Scratch.ArgumentType.STRING,
+              menu: "direction",
+            },
+          },
+        },
+        {
+          opcode: "getMouseWheelDirection",
+          blockType: Scratch.BlockType.REPORTER,
+          text: translate("mouse wheel direction"),
+        },
+        "---",
+        {
+          opcode: "setMouseTravel",
+          blockType: Scratch.BlockType.COMMAND,
+          text: translate("set mouse [DIRECTION] distance to [VALUE]"),
+          arguments: {
+            DIRECTION: {
+              type: Scratch.ArgumentType.STRING,
+              menu: "direction",
+            },
+            VALUE: {
+              type: Scratch.ArgumentType.NUMBER,
+              defaultValue: 0,
+            },
+          },
+        },
+        {
+          opcode: "mouseWheelTravel",
+          blockType: Scratch.BlockType.REPORTER,
+          text: translate("mouse [DIRECTION] distance"),
+          disableMonitor: true,
+          arguments: {
+            DIRECTION: {
+              type: Scratch.ArgumentType.STRING,
+              menu: "direction",
+            },
+          },
+        },
+        "---",
+        {
+          opcode: "setLocked",
+          blockType: Scratch.BlockType.COMMAND,
+          text: translate("set pointer lock [enabled]"),
+          disableMonitor: true,
+          arguments: {
+            enabled: {
+              type: Scratch.ArgumentType.STRING,
+              defaultValue: "true",
+              menu: "enabled",
+            },
+          },
+        },
+        {
+          opcode: "isLocked",
+          blockType: Scratch.BlockType.BOOLEAN,
+          text: translate("is pointer locked?"),
+        },
+        "---",
+        {
+          opcode: "setCur",
+          blockType: Scratch.BlockType.COMMAND,
+          text: translate("set cursor to [cur]"),
+          arguments: {
+            cur: {
+              type: Scratch.ArgumentType.STRING,
+              defaultValue: "pointer",
+              menu: "cursors",
+            },
+          },
+        },
+        {
+          opcode: "setCursorImage",
+          blockType: Scratch.BlockType.COMMAND,
+          text: translate(
+            "set cursor to current costume center: [position] max size: [size]"
+          ),
+          arguments: {
+            position: {
+              type: Scratch.ArgumentType.STRING,
+              defaultValue: "0,0",
+              menu: "imagePositions",
+            },
+            size: {
+              type: Scratch.ArgumentType.STRING,
+              defaultValue: "32x32",
+              menu: "imageSizes",
+            },
+          },
+        },
+        {
+          opcode: "hideCur",
+          blockType: Scratch.BlockType.COMMAND,
+          text: translate("hide cursor"),
+        },
+        {
+          opcode: "getCur",
+          blockType: Scratch.BlockType.REPORTER,
+          text: translate("cursor"),
+        },
+      ],
+      menus: {
+        direction: {
+          acceptReporters: false,
+          items: ["up", "down", "any"],
+        },
+        enabled: {
+          acceptReporters: true,
+          items: [
+            {
+              text: "enabled",
+              value: "true",
+            },
+            {
+              text: "disabled",
+              value: "false",
+            },
+          ],
+        },
+        cursors: {
+          acceptReporters: true,
+          items: this.cursors,
+        },
+        imagePositions: {
+          acceptReporters: true,
+          items: [
+            // [x, y] where x is [0=left, 100=right] and y is [0=top, 100=bottom]
+            { text: translate("top left"), value: "0,0" },
+            { text: translate("top right"), value: "100,0" },
+            { text: translate("bottom left"), value: "0,100" },
+            { text: translate("bottom right"), value: "100,100" },
+            { text: translate("center"), value: "50,50" },
+          ],
+        },
+        imageSizes: {
+          acceptReporters: true,
+          items: [
+            // Some important numbers to keep in mind:
+            // Browsers ignore cursor images >128 in any dimension (https://searchfox.org/mozilla-central/rev/43ee5e789b079e94837a21336e9ce2420658fd19/widget/gtk/nsWindow.cpp#3393-3402)
+            // Browsers may refuse to display a cursor near window borders for images >32 in any dimension
+            { text: "4x4", value: "4x4" },
+            { text: "8x8", value: "8x4" },
+            { text: "12x12", value: "12x12" },
+            { text: "16x16", value: "16x16" },
+            { text: "32x32", value: "32x32" },
+            { text: formatUnreliableSize("48x48"), value: "48x48" },
+            { text: formatUnreliableSize("64x64"), value: "64x64" },
+            { text: formatUnreliableSize("128x128"), value: "128x128" },
+          ],
+        },
+      },
+    };
+  }
 
-    getMouseScrolling(args) {
-      const direction = Cast.toString(args.DIRECTION);
-      switch (direction) {
-        case "up":
-          return !!(scrollY < 0);
-        case "down":
-          return !!(scrollY > 0);
-        case "any":
-          return !!(scrollY != 0);
-        default:
-          return false;
-      }
-    }
-
-    getMouseWheelDirection() {
-      return scrollY / 100;
-    }
-
-    mouseWheelTravel(args) {
-      const direction = Cast.toString(args.DIRECTION);
-      switch (direction) {
-        case "up":
-          return scrollDistanceUp;
-        case "down":
-          return scrollDistanceDown;
-        case "any":
-          return scrollDistance;
-        default:
-          return 0;
-      }
-    }
-
-    setMouseTravel(args) {
-      const direction = Cast.toString(args.DIRECTION);
-      const value = Cast.toNumber(args.VALUE);
-      switch (direction) {
-        case "up":
-          return (scrollDistanceUp = value);
-        case "down":
-          return (scrollDistanceDown = value);
-        default:
-          return (scrollDistance = value);
-      }
-    }
-
-    setLocked(args) {
-      isPointerLockEnabled = args.enabled === "true";
-      if (!isPointerLockEnabled && isLocked) {
-        document.exitPointerLock();
-      }
-    }
-
-    isLocked() {
-      return isLocked;
-    }
-
-    setCur(args) {
-      const newCursor = Cast.toString(args.cur);
-      // Prevent setting cursor to "url(...), default" from causing fetch.
-      if (this.cursors.includes(newCursor) || newCursor === "none") {
-        nativeCursor = newCursor;
-        customCursorImageName = null;
-        currentCanvasCursor = newCursor;
-        updateCanvasCursor();
-      }
-    }
-
-    setCursorImage(args, util) {
-      const [maxWidth, maxHeight] = parseTuple(args.size).map((i) =>
-        Math.max(0, i)
-      );
-
-      const currentCostume =
-        util.target.getCostumes()[util.target.currentCostume];
-      const costumeName = currentCostume.name;
-
-      let encodedCostume;
-      try {
-        encodedCostume = costumeToCursor(currentCostume, maxWidth, maxHeight);
-      } catch (e) {
-        // This could happen for a variety of reasons.
-        console.error(e);
-      }
-
-      if (encodedCostume) {
-        const [percentX, percentY] = parseTuple(args.position).map(
-          (i) => Math.max(0, Math.min(100, i)) / 100
-        );
-        const x = percentX * encodedCostume.width;
-        const y = percentY * encodedCostume.height;
-
-        currentCanvasCursor = `url("${encodedCostume.uri}") ${x} ${y}, ${nativeCursor}`;
-        updateCanvasCursor();
-      } else {
-        // If for some reason the costume couldn't be encoded, we'll leave the cursor unchanged.
-        // This is the same behavior that would happen if we successfully encode a cursor but the browser
-        // is unable to parse it for some reason.
-      }
-
-      customCursorImageName = costumeName;
-    }
-
-    hideCur() {
-      this.setCur({
-        cur: "none",
-      });
-    }
-
-    getCur() {
-      if (customCursorImageName !== null) {
-        return customCursorImageName;
-      }
-      return nativeCursor;
+  getMouseScrolling(args) {
+    const direction = Cast.toString(args.DIRECTION);
+    switch (direction) {
+      case "up":
+        return !!(scrollY < 0);
+      case "down":
+        return !!(scrollY > 0);
+      case "any":
+        return !!(scrollY != 0);
+      default:
+        return false;
     }
   }
 
-  Scratch.extensions.register(new MouseCursor());
-})(Scratch);
+  getMouseWheelDirection() {
+    return scrollY / 100;
+  }
+
+  mouseWheelTravel(args) {
+    const direction = Cast.toString(args.DIRECTION);
+    switch (direction) {
+      case "up":
+        return scrollDistanceUp;
+      case "down":
+        return scrollDistanceDown;
+      case "any":
+        return scrollDistance;
+      default:
+        return 0;
+    }
+  }
+
+  setMouseTravel(args) {
+    const direction = Cast.toString(args.DIRECTION);
+    const value = Cast.toNumber(args.VALUE);
+    switch (direction) {
+      case "up":
+        return (scrollDistanceUp = value);
+      case "down":
+        return (scrollDistanceDown = value);
+      default:
+        return (scrollDistance = value);
+    }
+  }
+
+  setLocked(args) {
+    isPointerLockEnabled = args.enabled === "true";
+    if (!isPointerLockEnabled && isLocked) {
+      document.exitPointerLock();
+    }
+  }
+
+  isLocked() {
+    return isLocked;
+  }
+
+  setCur(args) {
+    const newCursor = Cast.toString(args.cur);
+    // Prevent setting cursor to "url(...), default" from causing fetch.
+    if (this.cursors.includes(newCursor) || newCursor === "none") {
+      nativeCursor = newCursor;
+      customCursorImageName = null;
+      currentCanvasCursor = newCursor;
+      updateCanvasCursor();
+    }
+  }
+
+  setCursorImage(args, util) {
+    const [maxWidth, maxHeight] = parseTuple(args.size).map((i) =>
+      Math.max(0, i)
+    );
+
+    const currentCostume =
+      util.target.getCostumes()[util.target.currentCostume];
+    const costumeName = currentCostume.name;
+
+    let encodedCostume;
+    try {
+      encodedCostume = costumeToCursor(currentCostume, maxWidth, maxHeight);
+    } catch (e) {
+      // This could happen for a variety of reasons.
+      console.error(e);
+    }
+
+    if (encodedCostume) {
+      const [percentX, percentY] = parseTuple(args.position).map(
+        (i) => Math.max(0, Math.min(100, i)) / 100
+      );
+      const x = percentX * encodedCostume.width;
+      const y = percentY * encodedCostume.height;
+
+      currentCanvasCursor = `url("${encodedCostume.uri}") ${x} ${y}, ${nativeCursor}`;
+      updateCanvasCursor();
+    } else {
+      // If for some reason the costume couldn't be encoded, we'll leave the cursor unchanged.
+      // This is the same behavior that would happen if we successfully encode a cursor but the browser
+      // is unable to parse it for some reason.
+    }
+
+    customCursorImageName = costumeName;
+  }
+
+  hideCur() {
+    this.setCur({
+      cur: "none",
+    });
+  }
+
+  getCur() {
+    if (customCursorImageName !== null) {
+      return customCursorImageName;
+    }
+    return nativeCursor;
+  }
+}
+
+module.exports = UnsandboxedMouseBlocks;

@@ -6,7 +6,17 @@ const images = Object.create(null);
 
 const iconContext = require.context('./extensions', true, /\.(svg|png)$/);
 
-extensionList.forEach(extension => {
+// push extensions that are in a particular order to the top
+const priority = [
+    "arrays",
+    "objects"
+];
+
+priority.concat(extensionList).forEach(extension => {
+    if (extensions[extension]) {
+        return;
+    }
+
     // Logic for extensions
     extensions[extension] = () => require(`./extensions/${extension}/index`);
 
