@@ -10,7 +10,7 @@ extensionList.forEach(extension => {
     // Logic for extensions
     extensions[extension] = () => require(`./extensions/${extension}/index`);
 
-    manifests[extension] = () => require(`./extensions/${extension}/manifest`);
+    manifests[extension] = () => require(`./extensions/${extension}/manifest.json`);
 
     images[extension] = () => {
         const svgPath = `./${extension}/icon.svg`;
