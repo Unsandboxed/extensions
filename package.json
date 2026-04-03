@@ -2,13 +2,14 @@
   "name": "extensions",
   "version": "1.0.0",
   "description": "Unsandboxed's extension library",
-  "main": "index.js",
+  "main": "./dist/main.js",
+  "browser": "./dist/index.js",
   "directories": {
     "test": "tests"
   },
   "scripts": {
     "dev": "node development/server.js",
-    "test": "test"
+    "build": "webpack"
   },
   "repository": {
     "type": "git",
@@ -22,5 +23,13 @@
   "homepage": "https://github.com/Unsandboxed/extensions#readme",
   "dependencies": {
     "express": "^4.21.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.29.0",
+    "@babel/preset-env": "^7.29.2",
+    "babel-loader": "^10.1.1",
+    "lodash.defaultsdeep": "^4.6.1",
+    "webpack": "^5.105.4",
+    "webpack-cli": "^7.0.2"
   }
 }
