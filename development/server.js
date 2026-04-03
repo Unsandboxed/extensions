@@ -5,7 +5,7 @@ const app = express();
 app.set('strict routing', true);
 app.set('x-powered-by', false);
 
-const root = pathUtil.join(__dirname, '..', '/');
+const root = pathUtil.join(__dirname, '..', '/src/');
 
 app.use((req, res, next) => {
   // If we don't tell the browser not to cache files, it does by default, and people will get confused when
