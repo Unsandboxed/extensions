@@ -12,7 +12,7 @@ extensionList.forEach(extension => {
 
     // Information about the extension
     // TODO: https://github.com/Unsandboxed/extensions/issues/1
-    manifests[extension] = () => require(`./extensions/${extension}/manifest`);
+    manifests[extension] = () => require(`./extensions/${extension}/manifest.json`);
 
     images[extension] = () => {
         const svgPath = `./${extension}/icon.svg`;
