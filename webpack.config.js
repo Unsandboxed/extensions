@@ -40,13 +40,8 @@ const base = {
                 }
             },
             {
-                test: /\.(svg|png|wav|mp3|gif|jpg|woff2|hex)$/,
-                loader: 'url-loader',
-                options: {
-                    limit: 2048,
-                    outputPath: 'static/assets/',
-                    esModule: false
-                }
+                test: /\.(png|svg)$/i,
+                type: 'asset/inline'
             }
         ]
     },
