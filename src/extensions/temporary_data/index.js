@@ -258,7 +258,7 @@ class UnsandboxedTemporaryDataBlocks {
       .filter(block => fields.includes(block.opcode))
       .filter(block => container.getTopLevelScript(block.id) === script)
       .map(block => block.fields[block.opcode
-        .replace(`${this.extId}_menu_`, '')].value)
+        .replace(`${UnsandboxedTemporaryDataBlocks.extensionId}_menu_`, '')].value)
       .sort(stringUtil.compareStrings);
 
     if (values.length == 0) return [""];
