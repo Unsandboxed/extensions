@@ -250,8 +250,8 @@ class UnsandboxedTemporaryDataBlocks {
     const script = container.getTopLevelScript(sourceBlock.id);
 
     const fields = [
-      `${this.extId}_menu_variables`,
-      `${this.extId}_menu_variableGetter`
+      `${UnsandboxedTemporaryDataBlocks.extensionId}_menu_variables`,
+      `${UnsandboxedTemporaryDataBlocks.extensionId}_menu_variableGetter`
     ]
 
     const values = Object.values(container._blocks)

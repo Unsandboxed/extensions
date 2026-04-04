@@ -18,7 +18,7 @@ priority.concat(extensionList).forEach(extension => {
     }
 
     // Logic for extensions
-    extensions[extension] = () => require(`./extensions/${extension}/index`);
+    extensions[extension] = () => require(`./extensions/${extension}/index.js`);
 
     // Information about the extension
     // TODO: https://github.com/Unsandboxed/extensions/issues/1
