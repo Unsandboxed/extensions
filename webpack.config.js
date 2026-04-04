@@ -34,10 +34,34 @@ const base = {
                     path.resolve('src')
                 ],
                 test: /\.js$/,
-                loader: 'babel-loader',
-                options: {
-                    presets: [['@babel/preset-env']]
-                }
+                include: [path.resolve('src')],
+                use: [
+                    {
+                        loader: 'babel-loader',
+                        options: {
+                            presets: [['@babel/preset-env']]
+                        }
+                    },
+                    {
+                        loader: 'string-replace-loader',
+                        options: {
+                            multiple: [
+                                // Some legacy extensions use an IIFE to wrap the entire extension, which we need to remove
+                                // to work with our module system
+                                {
+                                    search: /^[\s\S]*?\(function\s*\(Scratch\)\s*\{([\s\S]*)\}\)\(Scratch\);?[\s]*$/g,
+                                    replace: '$1'
+                                },
+                                // Some legacy extensions register themselves by calling Scratch.extensions.register with 
+                                // a new instance of the extension class, which we need to change to export the class instead
+                                {
+                                    search: /Scratch\.extensions\.register\(new\s+(\w+)\(\)\);?/g,
+                                    replace: 'module.exports = $1;'
+                                }
+                            ]
+                        }
+                    }
+                ]
             },
             {
                 test: /\.(png|svg)$/i,
