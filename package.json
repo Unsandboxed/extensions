@@ -24,6 +24,7 @@
   "dependencies": {
     "express": "^4.21.1",
     "file-loader": "^6.2.0",
+    "string-replace-loader": "^3.3.0",
     "url-loader": "^4.1.1",
     "watch": "^0.13.0"
   },
