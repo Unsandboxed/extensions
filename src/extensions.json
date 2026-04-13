@@ -3,7 +3,7 @@
   "usbComments": "Unsandboxed/comments",
   "usbIteration": "Unsandboxed/iteration",
   "usbMouse": "Unsandboxed/mouse",
-  "objects": "Unsandboxed/objects",
+  "usbObjects": "Unsandboxed/objects",
   "usbRuntime": "Unsandboxed/runtime",
   "usbTemporaryData": "Unsandboxed/temporary_data",
   "usbTouch": "Unsandboxed/touch"
