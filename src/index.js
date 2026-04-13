@@ -14,18 +14,32 @@ const priority = [
     "Unsandboxed/objects"
 ];
 
-priority.concat(extensionList).forEach(extension => {
-    if (extensions[extension]) {
+const resolvePriorityEntry = entry => {
+    if (Object.prototype.hasOwnProperty.call(extensionsMap, entry)) {
+        return entry;
+    }
+
+    const match = extensionList.find(id => extensionsMap[id] === entry);
+    return match || null;
+};
+
+const orderedExtensions = priority
+    .map(resolvePriorityEntry)
+    .filter(Boolean)
+    .concat(extensionList);
+
+orderedExtensions.forEach(extensionId => {
+    if (extensions[extensionId]) {
         return;
     }
 
-    const subPath = extensionsMap[extension] || extension;
+    const subPath = extensionsMap[extensionId] || extensionId;
 
     // Logic for extensions
-    extensions[extension] = () => require(`./extensions/${subPath}/index.js`);
+    extensions[extensionId] = () => require(`./extensions/${subPath}/index.js`);
 
     // Information about the extension
-    manifests[extension] = () => {
+    manifests[extensionId] = () => {
         const manifestPath = `./${subPath}/manifest.json`;
         
         if (manifestContext.keys().includes(manifestPath)) {
@@ -33,10 +47,10 @@ priority.concat(extensionList).forEach(extension => {
         }
         
         // Fallback or error if a manifest is missing despite the build check
-        throw new Error(`Manifest not found for ${extension} at ${manifestPath}`);
+        throw new Error(`Manifest not found for ${extensionId} at ${manifestPath}`);
     };
 
-    images[extension] = () => {
+    images[extensionId] = () => {
         const svgPath = `./${subPath}/icon.svg`;
         const pngPath = `./${subPath}/icon.png`;
 
