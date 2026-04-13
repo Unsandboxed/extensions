@@ -1,5 +1,6 @@
 {
-  "name": "Comments",
+  "id": "usbComments",
+  "name": "Comment Blocks",
   "description": "Annotate your scripts.",
   "createdBy": [],
   "insetIconColor": "#e4db8c"

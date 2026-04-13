@@ -9,12 +9,13 @@
    * @constructor
    */
   class UnsandboxedIterationBlocks {
-    constructor() {
-      /**
-       * The extension identifier of this block package.
-       */
-      this.extId = "usbIteration";
+    /**
+     * The extension identifier of this block package.
+     * @type {string}
+     */
+    static extensionId = "usbIteration";
 
+    constructor() {
       /**
        * The Scratch Virtual Machine instance.
        */
@@ -138,7 +139,7 @@
      */
     getInfo() {
       return {
-        id: this.extId,
+        id: UnsandboxedIterationBlocks.extensionId,
         name: "Iteration",
         blocks: [
           {

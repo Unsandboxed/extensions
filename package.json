@@ -9,7 +9,8 @@
   },
   "scripts": {
     "dev": "node development/server.js",
-    "build": "webpack"
+    "build": "webpack",
+    "test": "node tests/runTests.js"
   },
   "repository": {
     "type": "git",

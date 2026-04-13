@@ -37,6 +37,22 @@ app.use((req, res) => {
   res.send('404 Not Found');
 });
 
+let clients = [];
+app.get('/reload-stream', (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    clients.push(res);
+    req.on('close', () => clients = clients.filter(c => c !== res));
+});
+
+// Watch the dist folder for changes
+const distPath = pathUtil.join(__dirname, '..', 'dist/main.js');
+fs.watch(distPath, () => {
+    console.log('File changed, notifying browser...');
+    clients.forEach(res => res.write('data: reload\n\n'));
+});
+
 // The port the server runs on matters. The editor only treats port 8000 and 8001 as unsandboxed.
 const PORT = 8001;
 app.listen(8001, () => {

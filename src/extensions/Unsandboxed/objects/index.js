@@ -33,7 +33,7 @@
     getInfo() {
       return {
         id: UnsandboxedObjectsBlocks.extensionId,
-        name: translate("Objects"),
+        name: translate("TEST"),
         color1: "#e765a8",
         blocks: [
           {

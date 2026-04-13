@@ -1,25 +1,65 @@
 const fs = require('fs');
 const path = require('path');
 
-// Helper function to handle the logic
-const generateExtensionsList = () => {
-    const dirPath = path.resolve(__dirname, 'src/extensions');
-    const outputPath = path.resolve(__dirname, 'src/extensions.json');
+const getManifestId = (folder) => {
+    const manifestPath = path.join(folder, 'manifest.json');
+    if (!fs.existsSync(manifestPath)) return null;
 
     try {
-        // Filter for directories only
-        const folders = fs.readdirSync(dirPath, { withFileTypes: true })
-            .filter(dirent => dirent.isDirectory())
-            .map(dirent => dirent.name);
-
-        fs.writeFileSync(outputPath, JSON.stringify(folders, null, 2));
-        console.log('Successfully generated src/extensions.json');
-    } catch (err) {
-        console.error('Error generating extensions.json:', err);
+        const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+        return manifest.id || null;
+    } catch (e) {
+        console.error(`Malformed manifest: ${manifestPath}`);
+        return null;
     }
 };
 
-const base = {
+const generateExtensionsList = () => {
+    const root = path.resolve(__dirname, 'src/extensions');
+    const out = path.resolve(__dirname, 'src/extensions.json');
+
+    const walk = (dir, map = {}) => {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+
+        for (const entry of entries) {
+            const fullPath = path.join(dir, entry.name);
+
+            if (entry.isDirectory()) {
+                walk(fullPath, map);
+                continue;
+            }
+
+            if (entry.name !== 'index.js') continue;
+
+            const folder = path.dirname(fullPath);
+            const id = getManifestId(folder);
+
+            if (!id) {
+                console.warn(`Skipping "${path.basename(folder)}" - missing id in manifest.`);
+                continue;
+            }
+
+            const rel = path.relative(root, folder).replace(/\\/g, '/');
+
+            if (map[id]) {
+                console.warn(`Duplicate ID "${id}" at "${rel}". Skipping.`);
+                continue;
+            }
+
+            map[id] = rel;
+        }
+        return map;
+    };
+
+    try {
+        fs.writeFileSync(out, JSON.stringify(walk(root), null, 2));
+        console.log('Generated extensions.json');
+    } catch (err) {
+        console.error('Failed to generate extensions.json:', err);
+    }
+};
+
+module.exports = {
     mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
     entry: path.resolve(__dirname, 'src/index.js'),
     output: {
@@ -30,31 +70,24 @@ const base = {
     module: {
         rules: [
             {
-                include: [
-                    path.resolve('src')
-                ],
                 test: /\.js$/,
                 include: [path.resolve('src')],
                 use: [
                     {
                         loader: 'babel-loader',
-                        options: {
-                            presets: [['@babel/preset-env']]
-                        }
+                        options: { presets: [['@babel/preset-env']] }
                     },
                     {
                         loader: 'string-replace-loader',
                         options: {
                             multiple: [
-                                // Some legacy extensions use an IIFE to wrap the entire extension, which we need to remove
-                                // to work with our module system
                                 {
+                                    // Strip IIFE wrapper for TurboWarp-style extensions
                                     search: /^[\s\S]*?\(function\s*\(Scratch\)\s*\{([\s\S]*)\}\)\(Scratch\);?[\s]*$/g,
                                     replace: '$1'
                                 },
-                                // Some legacy extensions register themselves by calling Scratch.extensions.register with 
-                                // a new instance of the extension class, which we need to change to export the class instead
                                 {
+                                    // Replace Scratch.extensions.register with module export for TurboWarp-style extensions
                                     search: /Scratch\.extensions\.register\(new\s+(\w+)\(\)\);?/g,
                                     replace: 'module.exports = $1;'
                                 }
@@ -72,13 +105,9 @@ const base = {
     plugins: [
         {
             apply: (compiler) => {
-                // Generate the file before the build starts
-                compiler.hooks.beforeRun.tap('DirectoryListPlugin', generateExtensionsList);
-                // Generate the file again if folders change during watch mode
-                compiler.hooks.watchRun.tap('DirectoryListPlugin', generateExtensionsList);
+                compiler.hooks.beforeRun.tap('DirList', generateExtensionsList);
+                compiler.hooks.watchRun.tap('DirList', generateExtensionsList);
             }
         }
     ]
 };
-
-module.exports = base;

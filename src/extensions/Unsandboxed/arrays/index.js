@@ -13,7 +13,7 @@
      * The extension identifier of this block package.
      * @type {string}
      */
-    static extensionId = "arrays";
+    static extensionId = "usbArrays";
 
     /**
      * Deep-clone an array and preserve its contents.
