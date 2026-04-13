@@ -1,7 +1,0 @@
-{
-  "id": "usbRequireDemo",
-  "name": "Require Demo",
-  "description": "Minimal extension to test webpack require() resolution in the dev server.",
-  "createdBy": [],
-  "insetIconColor": "#2f8f83"
-}
