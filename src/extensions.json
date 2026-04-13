@@ -4,6 +4,7 @@
   "usbIteration": "Unsandboxed/iteration",
   "usbMouse": "Unsandboxed/mouse",
   "objects": "Unsandboxed/objects",
+  "usbRequireDemo": "Unsandboxed/require_demo",
   "usbRuntime": "Unsandboxed/runtime",
   "usbTemporaryData": "Unsandboxed/temporary_data",
   "usbTouch": "Unsandboxed/touch"
