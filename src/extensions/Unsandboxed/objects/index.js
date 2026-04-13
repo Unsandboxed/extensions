@@ -13,7 +13,7 @@
      * The extension identifier of this block package.
      * @type {string}
      */
-    static extensionId = "objects";
+    static extensionId = "usbObjects";
 
     constructor() {
       /**
