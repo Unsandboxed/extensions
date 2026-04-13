@@ -1,11 +1,12 @@
-[
-  "arrays",
-  "clones",
-  "comments",
-  "iteration",
-  "mouse",
-  "objects",
-  "runtime",
-  "temporary_data",
-  "touch"
-]
+{
+  "usbAppendToControlDemo": "append_to_control_demo",
+  "usbBlending": "blending",
+  "usbClipMask": "clip_mask",
+  "usbClonesPlus": "clones",
+  "usbComments": "comments",
+  "usbIteration": "iteration",
+  "usbParticles": "particles",
+  "usbShaderFX": "shader_fx",
+  "stretch": "stretch",
+  "usbArrays": "Unsandboxed/arrays"
+}

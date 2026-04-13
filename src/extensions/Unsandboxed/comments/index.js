@@ -12,7 +12,7 @@
      * The extension identifier of this block package.
      * @type {string}
      */
-    static extensionId = "comments";
+    static extensionId = "usbComments";
 
     /**
      * @returns {object} metadata for this extension and its blocks.
