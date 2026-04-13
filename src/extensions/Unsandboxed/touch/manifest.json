@@ -1,7 +1,8 @@
 {
+  "id": "usbTouch",
   "name": "Touch Control",
   "description": "Sense interactions on touchscreen devices.",
   "createdBy": ["Skyhigh173"],
-  "insetIconColor": null,
+  "insetIconColor": "#2a9d8f",
   "license": "MIT"
 }

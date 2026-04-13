@@ -1,6 +1,7 @@
 {
+  "id": "usbMouse",
   "name": "Mouse",
   "description": "Various mouse blocks.",
   "createdBy": [],
-  "insetIconColor": null
+  "insetIconColor": "#4a6fa5"
 }
