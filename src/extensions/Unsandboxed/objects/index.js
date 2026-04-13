@@ -15,6 +15,20 @@
      */
     static extensionId = "objects";
 
+    constructor() {
+      /**
+       * The Scratch Virtual Machine instance.
+       * @type {VirtualMachine}
+       */
+      this.vm = Scratch.vm;
+
+      /**
+       * The runtime instantiating this block package.
+       * @type {Runtime}
+       */
+      this.runtime = this.vm.runtime;
+    }
+
     /**
      * Deep-clone an object and preserve its contents.
      * Functions, classes, and all types will be preserved.
@@ -33,7 +47,7 @@
     getInfo() {
       return {
         id: UnsandboxedObjectsBlocks.extensionId,
-        name: translate("TEST"),
+        name: translate("Objects"),
         color1: "#e765a8",
         blocks: [
           {

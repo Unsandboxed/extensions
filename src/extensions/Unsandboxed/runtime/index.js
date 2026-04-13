@@ -9,14 +9,14 @@
    * We only use this to get constants from.
    * TODO: There's probably a better way to get this.
    */
-  const Runtime = vm.runtime.constructor;
+  const Runtime = Scratch.vm.runtime.constructor;
 
   /**
    * The constructor for a Scratch Renderer.
    * We only use this to get constants from.
    * TODO: There's probably a better way to get this.
    */
-  const Renderer = vm.runtime.renderer.constructor;
+  const Renderer = Scratch.vm.runtime.renderer.constructor;
 
   /**
    * Unsandboxed blocks for modifying the runtime.
@@ -149,7 +149,7 @@
      */
     getInfo() {
       return {
-        id: UnsandboxedRuntimeBlocks.extId,
+        id: UnsandboxedRuntimeBlocks.extensionId,
         name: translate("Runtime"),
         blocks: [
           {
