@@ -15,6 +15,20 @@
      */
     static extensionId = "usbArrays";
 
+    constructor() {
+      /**
+       * The Scratch Virtual Machine instance.
+       * @type {VirtualMachine}
+       */
+      this.vm = Scratch.vm;
+
+      /**
+       * The runtime instantiating this block package.
+       * @type {Runtime}
+       */
+      this.runtime = this.vm.runtime;
+    }
+
     /**
      * Deep-clone an array and preserve its contents.
      * Functions, classes, and all types will be preserved.

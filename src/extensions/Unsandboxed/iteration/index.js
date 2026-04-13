@@ -44,11 +44,12 @@
     _handleUpdate() {
       const target = this.runtime.getEditingTarget();
       if (!target) return;
+      const extensionId = UnsandboxedIterationBlocks.extensionId;
 
       // Get all blocks within this extension
       const blocks = Object.values(target.blocks._blocks)
         .filter(model =>
-          model.opcode.startsWith(this.extId)
+          model.opcode.startsWith(extensionId)
         )
 
       for (const block of blocks) {
@@ -72,7 +73,7 @@
           // Get the label of the shadow block and remove its suffix.
           const label = shadowBlock.getFieldValue("VALUE");
           const trimmedLabel = this._removeTrailingNumbers(label);
-          shadowBlock.setFieldValue(trimmedLabel + block[this.extId + "_depth"], "VALUE");
+          shadowBlock.setFieldValue(trimmedLabel + block[`${extensionId}_depth`], "VALUE");
         }
       }
     }
@@ -83,13 +84,14 @@
      * @param {*} container The block container to check through.
      */
     _getDepthForBlock(block, container) {
+      const extensionId = UnsandboxedIterationBlocks.extensionId;
       let prev = block;
       let depth = 0;
       while (prev) {
         if (prev.opcode === block.opcode) depth++;
         prev = this._getOuterParent(prev, container);
       }
-      block[this.extId + "_depth"] = depth;
+      block[`${extensionId}_depth`] = depth;
     }
 
     /**

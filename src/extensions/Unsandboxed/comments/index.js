@@ -14,6 +14,20 @@
      */
     static extensionId = "usbComments";
 
+    constructor() {
+      /**
+       * The Scratch Virtual Machine instance.
+       * @type {VirtualMachine}
+       */
+      this.vm = Scratch.vm;
+
+      /**
+       * The runtime instantiating this block package.
+       * @type {Runtime}
+       */
+      this.runtime = this.vm.runtime;
+    }
+
     /**
      * @returns {object} metadata for this extension and its blocks.
      */
