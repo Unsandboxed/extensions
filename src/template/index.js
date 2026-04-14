@@ -12,7 +12,7 @@
  */
 
 (function (Scratch) {
-	"use strict";
+  "use strict";
 
   /**
    * You are technically able to require other files for your extension, as
@@ -28,9 +28,9 @@
   /**
    * Commonly used utility APIs tend to be referenced outside of the constructor.
    * This is mostly to avoid having to write `this.` repeatedly in block implementations.
-   */ 
-	const Cast = Scratch.UnsandboxedMod.Cast;
-	const translate = Scratch.translate;
+   */
+  const Cast = Scratch.UnsandboxedMod.Cast;
+  const translate = Scratch.translate;
 
   const myBadFunction = () => {
     /**
@@ -38,25 +38,25 @@
      */
   };
 
-	/**
-	 * Starter template for Unsandboxed extensions.
-	 * Rename this class, the extension id, and block opcodes for your extension.
-	 */
-	class UnsandboxedTemplateBlocks {
-		/**
-		 * Keep this in sync with manifest.json id.
+  /**
+   * Starter template for Unsandboxed extensions.
+   * Rename this class, the extension id, and block opcodes for your extension.
+   */
+  class UnsandboxedTemplateBlocks {
+    /**
+     * Keep this in sync with manifest.json id.
      * The prefix should be unique to you, e.g. your username.
      * Any time the extension id is used in code, it should reference this static property.
-		 * @type {string}
-		 */
-		static extensionId = "usbTemplate";
+     * @type {string}
+     */
+    static extensionId = "usbTemplate";
 
     /**
      * The constructor is called when the extension is instantiated by the Scratch VM.
      * You can set up any necessary state or references here.
      * any commonly accessed APIs should be referenced here for convenience.
      */
-		constructor() {
+    constructor() {
       /**
        * The Scratch Virtual Machine instance.
        * @type {VirtualMachine}
@@ -68,7 +68,7 @@
        * @type {Runtime}
        */
       this.runtime = this.vm.runtime;
-		}
+    }
 
     /**
      * An example of a helper function to resolve parameter names for loop blocks.
@@ -81,104 +81,104 @@
      * @param {string} [fallback=""] Fallback label when the input is missing.
      * @returns {string} Resolved parameter label.
      */
-		_getParameterName(util, inputName, fallback = "") {
-			const blockId = util?.thread?.peekStack && util.thread.peekStack();
-			if (!blockId) return Cast.toString(fallback);
+    _getParameterName(util, inputName, fallback = "") {
+      const blockId = util?.thread?.peekStack && util.thread.peekStack();
+      if (!blockId) return Cast.toString(fallback);
 
-			const block = util.target?.blocks?.getBlock(blockId);
-			if (!block || !block.inputs || !block.inputs[inputName]) {
-				return Cast.toString(fallback);
-			}
+      const block = util.target?.blocks?.getBlock(blockId);
+      if (!block || !block.inputs || !block.inputs[inputName]) {
+        return Cast.toString(fallback);
+      }
 
-			const inputId = block.inputs[inputName].block;
-			const inputBlock = util.target.blocks.getBlock(inputId);
-			const fieldValue = inputBlock?.fields?.VALUE?.value;
-			if (typeof fieldValue === "undefined" || fieldValue === null) {
-				return Cast.toString(fallback);
-			}
+      const inputId = block.inputs[inputName].block;
+      const inputBlock = util.target.blocks.getBlock(inputId);
+      const fieldValue = inputBlock?.fields?.VALUE?.value;
+      if (typeof fieldValue === "undefined" || fieldValue === null) {
+        return Cast.toString(fallback);
+      }
 
-			return Cast.toString(fieldValue);
-		}
+      return Cast.toString(fieldValue);
+    }
 
-		/**
+    /**
      * getInfo is a required method that describes your extension's blocks and metadata.
-		 * @returns {object} metadata for this extension and its blocks.
-		 */
-		getInfo() {
-			return {
-				id: UnsandboxedTemplateBlocks.extensionId,
-				name: translate("Template"),
-				color1: "#4b7bec",
-				blocks: [
-					{
-						opcode: "hello",
-						blockType: Scratch.BlockType.COMMAND,
-						text: translate("say hello to [NAME]"),
-						arguments: {
-							NAME: {
-								type: Scratch.ArgumentType.STRING,
-								defaultValue: translate("world")
-							}
-						}
-					},
-					"---",
-					{
-						opcode: "forEachItem",
-						blockType: Scratch.BlockType.LOOP,
-						text: translate("for [ITEM] in [ARRAY]"),
-						arguments: {
-							ITEM: {
+     * @returns {object} metadata for this extension and its blocks.
+     */
+    getInfo() {
+      return {
+        id: UnsandboxedTemplateBlocks.extensionId,
+        name: translate("Template"),
+        color1: "#4b7bec",
+        blocks: [
+          {
+            opcode: "hello",
+            blockType: Scratch.BlockType.COMMAND,
+            text: translate("say hello to [NAME]"),
+            arguments: {
+              NAME: {
+                type: Scratch.ArgumentType.STRING,
+                defaultValue: translate("world")
+              }
+            }
+          },
+          "---",
+          {
+            opcode: "forEachItem",
+            blockType: Scratch.BlockType.LOOP,
+            text: translate("for [ITEM] in [ARRAY]"),
+            arguments: {
+              ITEM: {
                 /**
                  * This is a parameter input, which is like a custom block parameter
                  * that can be dragged and used as a block itself.
                  */
-								type: Scratch.ArgumentType.PARAMETER,
-								defaultValue: translate("item")
-							},
-							ARRAY: {
+                type: Scratch.ArgumentType.PARAMETER,
+                defaultValue: translate("item")
+              },
+              ARRAY: {
                 /**
                  * Scratch does not have a native array argument type, but you can use
                  * the "array" type from Unsandboxed to allow users to input lists or 
                  * arrays from other blocks.
                  */
-								type: Scratch.ArgumentType.ARRAY
-							}
-						}
-					}
-				],
-				menus: {}
-			};
-		}
+                type: Scratch.ArgumentType.ARRAY
+              }
+            }
+          }
+        ],
+        menus: {}
+      };
+    }
 
-		hello(args) {
-			Cast.toString(args.NAME);
-		}
+    hello(args) {
+      Cast.toString(args.NAME);
+    }
 
     /**
-		 * Iterate over each item in an array and expose the current value
-		 * through the parameter reporter declared in the block input.
-		 * @param {{ITEM: string, ARRAY: *}} args Block arguments.
-		 * @param {object} util Block utility object for stack state and branching.
-		 * @returns {void}
+     * Iterate over each item in an array and expose the current value
+     * through the parameter reporter declared in the block input.
+     * @param {{ITEM: string, ARRAY: *}} args Block arguments.
+     * @param {object} util Block utility object for stack state and branching.
+     * @returns {void}
      */
-		forEachItem(args, util) {
-			if (typeof util.stackFrame.index === "undefined") {
-				util.stackFrame.index = 0;
-			}
+    forEachItem(args, util) {
+      if (typeof util.stackFrame.index === "undefined") {
+        util.stackFrame.index = 0;
+      }
 
-			const itemName = this._getParameterName(util, "ITEM", args.ITEM);
-			const array = Cast.toArray(args.ARRAY);
+      const itemName = this._getParameterName(util, "ITEM", args.ITEM);
+      const array = Cast.toArray(args.ARRAY);
 
-			if (util.stackFrame.index < array.length) {
-				util.thread.initParams();
-				util.thread.pushParam(itemName, array[util.stackFrame.index]);
-				util.stackFrame.index++;
-				util.startBranch(1, true);
-			} else {
-				util.startBranch(2, false);
-			}
-		}
-	}
+      if (util.stackFrame.index < array.length) {
+        util.thread.initParams();
+        util.thread.pushParam(itemName, array[util.stackFrame.index]);
+        util.stackFrame.index++;
+        util.startBranch(1, true);
+      } else {
+        util.startBranch(2, false);
+      }
+    }
+  }
 
-	Scratch.extensions.register(new UnsandboxedTemplateBlocks());
+  Scratch.extensions.register(new UnsandboxedTemplateBlocks());
 })(Scratch);
