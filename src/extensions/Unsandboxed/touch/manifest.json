@@ -3,6 +3,6 @@
   "name": "Touch Control",
   "description": "Sense interactions on touchscreen devices.",
   "createdBy": ["Skyhigh173"],
-  "insetIconColor": "#2a9d8f",
+  "insetIconColor": "#5cb1d6",
   "license": "MIT"
 }

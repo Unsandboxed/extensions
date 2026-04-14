@@ -98,7 +98,15 @@ module.exports = {
             },
             {
                 test: /\.(png|svg)$/i,
-                type: 'asset/inline'
+                oneOf: [
+                    {
+                        resourceQuery: /recolorModule/,
+                        type: 'javascript/auto'
+                    },
+                    {
+                        type: 'asset/inline'
+                    }
+                ]
             }
         ]
     },
