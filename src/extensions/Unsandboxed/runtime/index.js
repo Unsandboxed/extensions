@@ -54,6 +54,18 @@
     static HIGH_QUALITY_PEN = "high quality pen";
 
     /**
+     * The identifier for the "sticky camera" option.
+     * @type {string}
+     */
+    static STICKY_CAMERA = "sticky camera";
+
+    /**
+     * The identifier for the "interpolation" option.
+     * @type {string}
+     */
+    static INTERPOLATION = "interpolation";
+
+    /**
      * The identifier for the "framerate" option.
      * @type {string}
      */
@@ -105,6 +117,9 @@
         if (newOptions.miscLimits !== this.previousRuntimeOptions.miscLimits) {
           this.emitChanged(UnsandboxedRuntimeBlocks.REMOVE_MISC_LIMITS);
         }
+        if (newOptions.stickyCamera !== this.previousRuntimeOptions.stickyCamera) {
+          this.emitChanged(UnsandboxedRuntimeBlocks.STICKY_CAMERA);
+        }
         if (newOptions.maxClones !== this.previousRuntimeOptions.maxClones) {
           this.emitChanged(UnsandboxedRuntimeBlocks.CLONE_LIMIT);
         }
@@ -116,6 +131,7 @@
       );
 
       this.vm.on(Runtime.FRAMERATE_CHANGED, () => this.emitChanged(UnsandboxedRuntimeBlocks.FRAMERATE));
+      this.vm.on(Runtime.INTERPOLATION_CHANGED, () => this.emitChanged(UnsandboxedRuntimeBlocks.INTERPOLATION));
       this.vm.on(Runtime.STAGE_SIZE_CHANGED, () => this.emitChanged(UnsandboxedRuntimeBlocks.STAGE_SIZE));
 
       const extensionInstance = this;
@@ -295,6 +311,14 @@
                 text: translate("high quality pen"),
                 value: UnsandboxedRuntimeBlocks.HIGH_QUALITY_PEN,
               },
+              {
+                text: translate("sticky camera"),
+                value: UnsandboxedRuntimeBlocks.STICKY_CAMERA,
+              },
+              {
+                text: translate("interpolation"),
+                value: UnsandboxedRuntimeBlocks.INTERPOLATION,
+              },
             ],
           },
           changeable: {
@@ -315,6 +339,14 @@
               {
                 text: translate("high quality pen"),
                 value: UnsandboxedRuntimeBlocks.HIGH_QUALITY_PEN,
+              },
+              {
+                text: translate("sticky camera"),
+                value: UnsandboxedRuntimeBlocks.STICKY_CAMERA,
+              },
+              {
+                text: translate("interpolation"),
+                value: UnsandboxedRuntimeBlocks.INTERPOLATION,
               },
               {
                 text: translate("framerate"),
@@ -389,6 +421,10 @@
         return !Scratch.vm.runtime.runtimeOptions.miscLimits;
       } else if (thing === UnsandboxedRuntimeBlocks.HIGH_QUALITY_PEN) {
         return Scratch.renderer.useHighQualityRender;
+      } else if (thing === UnsandboxedRuntimeBlocks.STICKY_CAMERA) {
+        return Scratch.vm.runtime.runtimeOptions.stickyCamera;
+      } else if (thing === UnsandboxedRuntimeBlocks.INTERPOLATION) {
+        return Scratch.vm.runtime.interpolationEnabled;
       }
       return false;
     }
@@ -398,7 +434,7 @@
 
       if (thing === UnsandboxedRuntimeBlocks.TURBO_MODE) {
         Scratch.vm.setTurboMode(enabled);
-      } else if (thing === this.REMOVE_FENCING) {
+      } else if (thing === UnsandboxedRuntimeBlocks.REMOVE_FENCING) {
         Scratch.vm.setRuntimeOptions({
           fencing: !enabled,
         });
@@ -408,6 +444,12 @@
         });
       } else if (thing === UnsandboxedRuntimeBlocks.HIGH_QUALITY_PEN) {
         Scratch.renderer.setUseHighQualityRender(enabled);
+      } else if (thing === UnsandboxedRuntimeBlocks.STICKY_CAMERA) {
+        Scratch.vm.setRuntimeOptions({
+          stickyCamera: enabled,
+        });
+      } else if (thing === UnsandboxedRuntimeBlocks.INTERPOLATION) {
+        Scratch.vm.setInterpolation(enabled);
       }
     }
 
