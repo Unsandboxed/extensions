@@ -484,6 +484,7 @@
     getInfo() {
       return {
         id: UnsandboxedMouseBlocks.extensionId,
+        color1: "#3fc0ac",
         name: translate("Mouse"),
         blocks: [
           {

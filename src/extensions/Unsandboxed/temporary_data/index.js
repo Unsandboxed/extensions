@@ -37,7 +37,7 @@
       return {
         id: UnsandboxedTemporaryDataBlocks.extensionId,
         name: translate("Temporary Data"),
-        color1: "#bc4749",
+        color1: "#d72d47",
         blocks: [
           {
             opcode: "activeVariables",
@@ -47,9 +47,9 @@
           "---",
           {
             opcode: "get",
-            color1: "#bc4749",
-            color2: "#bc4749",
-            color4: "#bc4749",
+            color1: "#d72d47",
+            color2: "#d72d47",
+            color4: "#d72d47",
             blockType: Scratch.BlockType.REPORTER,
             text: translate("[VAR]"),
             arguments: {
