@@ -24,8 +24,7 @@ npm run build
 npm run dev
 ```
 
-4. Open:
-
+Extensions will be hosted at the URL:
 `http://localhost:8001/`
 
 That is enough to begin editing and testing extensions.
