@@ -5,6 +5,7 @@ const extensions = Object.create(null);
 const manifests = Object.create(null);
 const images = Object.create(null);
 const insetImages = Object.create(null);
+const extensionPaths = Object.create(null);
 
 const normalizeHexColor = color => {
     if (typeof color !== 'string') {
@@ -64,6 +65,7 @@ orderedExtensions.forEach(extensionId => {
     }
 
     const subPath = extensionsMap[extensionId] || extensionId;
+    extensionPaths[extensionId] = subPath;
 
     // Logic for extensions
     extensions[extensionId] = () => require(`./extensions/${subPath}/index.js`);
@@ -129,5 +131,6 @@ module.exports = {
     extensions,
     manifests,
     images,
-    insetImages
+    insetImages,
+    extensionPaths
 };
