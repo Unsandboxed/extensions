@@ -27,6 +27,16 @@
        * @type {Runtime}
        */
       this.runtime = this.vm.runtime;
+
+      if (Scratch.ensureParameterReporterRenamer) {
+        const renamer = Scratch.ensureParameterReporterRenamer(this.runtime, Scratch.gui, Cast);
+        if (renamer) {
+          renamer.register(`${UnsandboxedArraysBlocks.extensionId}_map`, ["ITEM", "INDEX"], {
+            ITEM: translate("item"),
+            INDEX: "#"
+          });
+        }
+      }
     }
 
     /**
