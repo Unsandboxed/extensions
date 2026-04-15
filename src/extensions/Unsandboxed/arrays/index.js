@@ -54,6 +54,16 @@
             opcode: "newArray",
             blockType: Scratch.BlockType.ARRAY,
             text: translate("new array"),
+            arguments: {
+              ITEM: {
+                type: Scratch.ArgumentType.STRING,
+                defaultValue: "1"
+              }
+            },
+            extendable: {
+              proceeds: ["ITEM"],
+              minProceedGroups: 0
+            }
           },
           {
             opcode: "stringToArray",
@@ -69,15 +79,18 @@
           {
             opcode: "concat",
             blockType: Scratch.BlockType.ARRAY,
-            text: translate("join [ARRAY1] [ARRAY2]"),
+            text: translate("join"),
             arguments: {
-              ARRAY1: {
+              ARRAY: {
                 type: Scratch.ArgumentType.ARRAY
-              },
-              ARRAY2: {
-                type: Scratch.ArgumentType.ARRAY
-              },
+              }
             },
+            extendable: {
+              starts: ["ARRAY"],
+              proceeds: ["ARRAY"],
+              minProceedGroups: 0,
+              initialExtendCount: 1
+            }
           },
           "---",
           {
@@ -238,8 +251,8 @@
       };
     }
 
-    newArray() {
-      return new Array;
+    newArray(args) {
+      return Scratch.getOrderedExtendableValues(args, ["TEXT"], "");
     }
 
     stringToArray(args) {
@@ -248,10 +261,10 @@
     }
 
     concat(args) {
-      const array1 = this.complexClone(Cast.toArray(args.ARRAY1)) ?? [];
-      const array2 = this.complexClone(Cast.toArray(args.ARRAY2)) ?? [];
+      const arrays = Scratch.getOrderedExtendableValues(args, ["ARRAY"], [])
+        .map(value => this.complexClone(Cast.toArray(value)) ?? []);
 
-      return array1.concat(array2);
+      return arrays.reduce((result, current) => result.concat(current), []);
     }
 
     addItem(args) {
