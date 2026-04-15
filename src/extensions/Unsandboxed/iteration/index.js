@@ -3,6 +3,8 @@
 
   const Cast = Scratch.UnsandboxedMod.Cast;
   const translate = Scratch.translate;
+  const ARRAYS_MAP_OPCODE = "usbArrays_map";
+  const OBJECTS_MAP_OPCODE = "usbObjects_mapValues";
 
   /**
    * Unsandboxed blocks for iterating arrays and objects.
@@ -172,6 +174,12 @@
       }
       if (opcode === `${UnsandboxedIterationBlocks.extensionId}_forItem`) {
         return ["ITEM", "INDEX"];
+      }
+      if (opcode === ARRAYS_MAP_OPCODE) {
+        return ["ITEM", "INDEX"];
+      }
+      if (opcode === OBJECTS_MAP_OPCODE) {
+        return ["KEY", "VALUE"];
       }
       if (opcode === `${UnsandboxedIterationBlocks.extensionId}_forRange`) {
         return ["INDEX"];
@@ -343,6 +351,8 @@
     _isIterationOpcode(opcode) {
       return opcode === `${UnsandboxedIterationBlocks.extensionId}_forKeyValue` ||
         opcode === `${UnsandboxedIterationBlocks.extensionId}_forItem` ||
+        opcode === ARRAYS_MAP_OPCODE ||
+        opcode === OBJECTS_MAP_OPCODE ||
         opcode === `${UnsandboxedIterationBlocks.extensionId}_repeatWith` ||
         opcode === `${UnsandboxedIterationBlocks.extensionId}_forRange` ||
         opcode === `${UnsandboxedIterationBlocks.extensionId}_forChar`;
@@ -646,6 +656,7 @@
         util.startBranch(2, false);
       }
     }
+
   }
 
   Scratch.extensions.register(new UnsandboxedIterationBlocks());
