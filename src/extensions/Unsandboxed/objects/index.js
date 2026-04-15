@@ -54,6 +54,31 @@
             opcode: "newObject",
             blockType: Scratch.BlockType.OBJECT,
             text: translate("new object"),
+            arguments: {
+              KEY: {
+                type: Scratch.ArgumentType.STRING,
+                defaultValue: translate("fruit"),
+                label: translate("key")
+              },
+              VALUE: {
+                type: Scratch.ArgumentType.STRING,
+                defaultValue: translate("apple"),
+                label: translate("value")
+              }
+            },
+            extendable: {
+              proceeds: [
+                {
+                  argument: "KEY",
+                  includeValue: true
+                },
+                {
+                  argument: "VALUE",
+                  includeValue: true
+                }
+              ],
+              minProceedGroups: 0
+            }
           },
           {
             opcode: "stringToObject",
@@ -69,15 +94,18 @@
           {
             opcode: "concat",
             blockType: Scratch.BlockType.OBJECT,
-            text: translate("join [OBJECT1] [OBJECT2]"),
+            text: translate("join"),
             arguments: {
-              OBJECT1: {
+              OBJECT: {
                 type: Scratch.ArgumentType.OBJECT
-              },
-              OBJECT2: {
-                type: Scratch.ArgumentType.OBJECT
-              },
+              }
             },
+            extendable: {
+              starts: ["OBJECT"],
+              proceeds: ["OBJECT"],
+              minProceedGroups: 0,
+              initialExtendCount: 1
+            }
           },
           "---",
           {
@@ -217,8 +245,18 @@
       };
     }
 
-    newObject() {
-      return new Object;
+    newObject(args) {
+      const entries = Scratch.getOrderedExtendableValues(args, ["TEXT"], "");
+      const object = {};
+
+      for (let i = 0; i < entries.length; i += 2) {
+        const key = Scratch.Cast.toString(entries[i]);
+        const value = entries[i + 1];
+        if (!key) continue;
+        object[key] = value;
+      }
+
+      return object;
     }
 
     stringToObject(args) {
@@ -227,10 +265,10 @@
     }
 
     concat(args) {
-      const object1 = this.complexClone(Cast.toObject(args.OBJECT1));
-      const object2 = this.complexClone(Cast.toObject(args.OBJECT2));
+      const objects = Scratch.getOrderedExtendableValues(args, ["OBJECT"], {})
+        .map(value => this.complexClone(Cast.toObject(value)));
 
-      return { ...object1, ...object2 };
+      return objects.reduce((result, current) => ({ ...result, ...current }), {});
     }
 
     getKey(args) {
