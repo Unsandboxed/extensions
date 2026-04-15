@@ -201,6 +201,27 @@
               }
             },
           },
+          "---",
+          {
+            opcode: "mapValues",
+            blockType: Scratch.BlockType.OBJECT,
+            output: "Object",
+            text: translate("for each [KEY] [VALUE] in [OBJECT]"),
+            branchCount: 1,
+            arguments: {
+              KEY: {
+                type: Scratch.ArgumentType.PARAMETER,
+                defaultValue: translate("key")
+              },
+              VALUE: {
+                type: Scratch.ArgumentType.PARAMETER,
+                defaultValue: translate("value")
+              },
+              OBJECT: {
+                type: Scratch.ArgumentType.OBJECT,
+              }
+            }
+          },
         ],
         menus: {
           // TODO: translate
@@ -327,6 +348,73 @@
       }
 
       return object;
+    }
+
+    mapValues(args, util) {
+      const keyName = this._getParameterName(util, "KEY", args.KEY);
+      const valueName = this._getParameterName(util, "VALUE", args.VALUE);
+
+      if (typeof util.stackFrame.index === "undefined") {
+        const source = Cast.toObject(args.OBJECT);
+        util.stackFrame.index = 0;
+        util.stackFrame.source = source;
+        util.stackFrame.keys = Object.keys(source);
+        util.stackFrame.result = {};
+        util.thread.peekStackFrame().weakScriptTop = true;
+      }
+
+      if (typeof util.stackFrame.pendingKey !== "undefined") {
+        const reported = this._consumeBranchReturn(util);
+        util.stackFrame.result[util.stackFrame.pendingKey] = reported;
+        delete util.stackFrame.pendingKey;
+      }
+
+      if (util.stackFrame.index < util.stackFrame.keys.length) {
+        const key = util.stackFrame.keys[util.stackFrame.index];
+        const value = util.stackFrame.source[key];
+        util.stackFrame.pendingKey = key;
+        util.stackFrame.index++;
+
+        util.thread.initParams();
+        util.thread.pushParam(keyName, key);
+        util.thread.pushParam(valueName, value);
+        util.startBranch(1, true);
+      } else {
+        return util.stackFrame.result;
+      }
+    }
+
+    _consumeBranchReturn(util) {
+      const fromReturnBlock = util.stackFrame.returnValue;
+      if (typeof fromReturnBlock !== "undefined") {
+        delete util.stackFrame.returnValue;
+        return fromReturnBlock;
+      }
+
+      const reported = util.thread.justReported;
+      if (reported === null || typeof reported === "undefined") {
+        return "";
+      }
+      return reported;
+    }
+
+    _getParameterName(util, inputName, fallback = "") {
+      const blockId = util?.thread?.peekStack && util.thread.peekStack();
+      if (!blockId) return Cast.toString(fallback);
+
+      const block = util.target?.blocks?.getBlock(blockId);
+      if (!block || !block.inputs || !block.inputs[inputName]) {
+        return Cast.toString(fallback);
+      }
+
+      const inputId = block.inputs[inputName].block;
+      const inputBlock = util.target.blocks.getBlock(inputId);
+      const fieldValue = inputBlock?.fields?.VALUE?.value;
+      if (typeof fieldValue === "undefined" || fieldValue === null) {
+        return Cast.toString(fallback);
+      }
+
+      return Cast.toString(fieldValue);
     }
   }
 
