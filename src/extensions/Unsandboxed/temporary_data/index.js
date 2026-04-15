@@ -204,14 +204,17 @@
         util.stackFrame.index = 0;
       }
 
-      const keys = Object.keys(Cast.toObject(args.OBJECT));
-      const values = Object.values(Cast.toObject(args.OBJECT));
+      const source = Cast.toObject(args.OBJECT);
+      const keys = Object.keys(source);
+      const values = Object.values(source);
 
       if (util.stackFrame.index < keys.length) {
         variables[keyName] = keys[util.stackFrame.index];
         variables[valueName] = values[util.stackFrame.index];
         util.stackFrame.index++;
-        return true;
+        util.startBranch(1, true);
+      } else {
+        util.startBranch(2, false);
       }
     };
 
@@ -230,7 +233,9 @@
         variables[itemName] = array[util.stackFrame.index];
         variables[indexName] = util.stackFrame.index + 1;
         util.stackFrame.index++;
-        return true;
+        util.startBranch(1, true);
+      } else {
+        util.startBranch(2, false);
       }
     };
 

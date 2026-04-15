@@ -215,6 +215,27 @@
               },
             },
           },
+          "---",
+          {
+            opcode: "map",
+            blockType: Scratch.BlockType.ARRAY,
+            output: "Array",
+            text: translate("for each [ITEM] [INDEX] in [ARRAY]"),
+            branchCount: 1,
+            arguments: {
+              ITEM: {
+                type: Scratch.ArgumentType.PARAMETER,
+                defaultValue: translate("item")
+              },
+              INDEX: {
+                type: Scratch.ArgumentType.PARAMETER,
+                defaultValue: "#"
+              },
+              ARRAY: {
+                type: Scratch.ArgumentType.ARRAY
+              }
+            }
+          },
         ],
         menus: {
           arrayIndexRandom: {
@@ -328,6 +349,70 @@
       const item = args.ITEM ?? "";
 
       return array.includes(item);
+    }
+
+    map(args, util) {
+      const itemName = this._getParameterName(util, "ITEM", args.ITEM);
+      const indexName = this._getParameterName(util, "INDEX", args.INDEX);
+
+      if (typeof util.stackFrame.index === "undefined") {
+        util.stackFrame.index = 0;
+        util.stackFrame.source = Cast.toArray(args.ARRAY);
+        util.stackFrame.results = [];
+        util.thread.peekStackFrame().weakScriptTop = true;
+      }
+
+      if (typeof util.stackFrame.pendingItemIndex !== "undefined") {
+        const reported = this._consumeBranchReturn(util);
+        util.stackFrame.results[util.stackFrame.pendingItemIndex] = reported;
+        delete util.stackFrame.pendingItemIndex;
+      }
+
+      if (util.stackFrame.index < util.stackFrame.source.length) {
+        const item = util.stackFrame.source[util.stackFrame.index];
+        util.stackFrame.pendingItemIndex = util.stackFrame.index;
+        util.stackFrame.index++;
+
+        util.thread.initParams();
+        util.thread.pushParam(itemName, item);
+        util.thread.pushParam(indexName, util.stackFrame.pendingItemIndex + 1);
+        util.startBranch(1, true);
+      } else {
+        return util.stackFrame.results;
+      }
+    }
+
+    _consumeBranchReturn(util) {
+      const fromReturnBlock = util.stackFrame.returnValue;
+      if (typeof fromReturnBlock !== "undefined") {
+        delete util.stackFrame.returnValue;
+        return fromReturnBlock;
+      }
+
+      const reported = util.thread.justReported;
+      if (reported === null || typeof reported === "undefined") {
+        return "";
+      }
+      return reported;
+    }
+
+    _getParameterName(util, inputName, fallback = "") {
+      const blockId = util?.thread?.peekStack && util.thread.peekStack();
+      if (!blockId) return Cast.toString(fallback);
+
+      const block = util.target?.blocks?.getBlock(blockId);
+      if (!block || !block.inputs || !block.inputs[inputName]) {
+        return Cast.toString(fallback);
+      }
+
+      const inputId = block.inputs[inputName].block;
+      const inputBlock = util.target.blocks.getBlock(inputId);
+      const fieldValue = inputBlock?.fields?.VALUE?.value;
+      if (typeof fieldValue === "undefined" || fieldValue === null) {
+        return Cast.toString(fallback);
+      }
+
+      return Cast.toString(fieldValue);
     }
 
     _getIndex(arg, length) {
