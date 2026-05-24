@@ -3,6 +3,7 @@
 
   const Cast = Scratch.UnsandboxedMod.Cast;
   const translate = Scratch.translate;
+  const IterationExtension = require("../iteration");
 
   /**
    * Unsandboxed blocks for working with JSON Objects.
@@ -59,6 +60,16 @@
         id: UnsandboxedObjectsBlocks.extensionId,
         name: translate("Objects"),
         color1: "#e765a8",
+        requires: {
+          usbVectors: [
+            "vec2"
+          ]
+        },
+        provides: {
+          usbIteration: [
+            "mapValues"
+          ],
+        },
         blocks: [
           {
             opcode: "newObject",
@@ -107,7 +118,7 @@
             text: translate("join"),
             arguments: {
               OBJECT: {
-                type: Scratch.ArgumentType.OBJECT
+                type: Scratch.ArgumentType.OBJECT,
               }
             },
             extendable: {
@@ -130,6 +141,7 @@
               },
               OBJECT: {
                 type: Scratch.ArgumentType.OBJECT,
+                text: translate("object")
               }
             }
           },
@@ -361,8 +373,8 @@
     }
 
     mapValues(args, util) {
-      const keyName = this._getParameterName(util, "KEY", args.KEY);
-      const valueName = this._getParameterName(util, "VALUE", args.VALUE);
+      const keyTarget = this._resolveParameterTarget(util, "KEY", args.KEY);
+      const valueTarget = this._resolveParameterTarget(util, "VALUE", args.VALUE);
 
       if (typeof util.stackFrame.index === "undefined") {
         const source = Cast.toObject(args.OBJECT);
@@ -386,8 +398,8 @@
         util.stackFrame.index++;
 
         util.thread.initParams();
-        util.thread.pushParam(keyName, key);
-        util.thread.pushParam(valueName, value);
+        this._assignResolvedParameterValue(keyTarget, key, util);
+        this._assignResolvedParameterValue(valueTarget, value, util);
         util.startBranch(1, true);
       } else {
         return util.stackFrame.result;
@@ -408,23 +420,12 @@
       return reported;
     }
 
-    _getParameterName(util, inputName, fallback = "") {
-      const blockId = util?.thread?.peekStack && util.thread.peekStack();
-      if (!blockId) return Cast.toString(fallback);
+    _resolveParameterTarget(util, inputName, fallback = "") {
+      return IterationExtension.resolveReporter(util, inputName, fallback);
+    }
 
-      const block = util.target?.blocks?.getBlock(blockId);
-      if (!block || !block.inputs || !block.inputs[inputName]) {
-        return Cast.toString(fallback);
-      }
-
-      const inputId = block.inputs[inputName].block;
-      const inputBlock = util.target.blocks.getBlock(inputId);
-      const fieldValue = inputBlock?.fields?.VALUE?.value;
-      if (typeof fieldValue === "undefined" || fieldValue === null) {
-        return Cast.toString(fallback);
-      }
-
-      return Cast.toString(fieldValue);
+    _assignResolvedParameterValue(target, value, util) {
+      IterationExtension.assignResolvedParameterValue(target, value, util);
     }
   }
 
