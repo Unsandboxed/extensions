@@ -1,0 +1,7 @@
+{
+  "id": "usbPathfinding",
+  "name": "Pathfinding",
+  "description": "Generate obstacle-aware paths as vector arrays.",
+  "createdBy": [],
+  "insetIconColor": "#3c9f73"
+}

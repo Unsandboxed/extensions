@@ -1,0 +1,7 @@
+{
+  "id": "usbControlProxy",
+  "name": "Control Proxy",
+  "description": "Run stack and reporter logic in other targets.",
+  "createdBy": [],
+  "insetIconColor": "#d18f2b"
+}

@@ -1,0 +1,7 @@
+{
+  "id": "usbPerlinNoise",
+  "name": "Perlin Noise",
+  "description": "Generate deterministic Perlin and fractal noise values.",
+  "createdBy": [],
+  "insetIconColor": "#5a8fd8"
+}

@@ -1,0 +1,7 @@
+{
+  "id": "usbLambda",
+  "name": "Lambda",
+  "description": "Create and run lambda-like reporters with arguments.",
+  "createdBy": [],
+  "insetIconColor": "#f39c6b"
+}

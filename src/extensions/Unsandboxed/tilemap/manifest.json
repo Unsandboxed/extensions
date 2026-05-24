@@ -1,0 +1,7 @@
+{
+  "id": "usbTilemap",
+  "name": "Tilemap",
+  "description": "Build camera-aware tile worlds with editor tooling.",
+  "createdBy": [],
+  "insetIconColor": "#5f8f3f"
+}
