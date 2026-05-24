@@ -1,19 +1,11 @@
 {
   "usbArrays": "Unsandboxed/arrays",
-  "usbClonesPlus": "Unsandboxed/clones_plus",
-  "usbSpriteTags": "Unsandboxed/collision_tags",
   "usbComments": "Unsandboxed/comments",
-  "usbControlProxy": "Unsandboxed/control_proxy",
   "usbIteration": "Unsandboxed/iteration",
-  "usbLambda": "Unsandboxed/lambda",
   "usbMouse": "Unsandboxed/mouse",
   "usbObjects": "Unsandboxed/objects",
-  "usbPathfinding": "Unsandboxed/pathfinding",
-  "usbPerlinNoise": "Unsandboxed/perlin_noise",
   "usbRuntime": "Unsandboxed/runtime",
   "usbTemporaryData": "Unsandboxed/temporary_data",
-  "usbTilemap": "Unsandboxed/tilemap",
-  "usbTouch": "Unsandboxed/touch",
   "usbTypes": "Unsandboxed/types",
   "usbVectors": "Unsandboxed/vectors"
 }
