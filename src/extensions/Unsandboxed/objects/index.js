@@ -60,11 +60,6 @@
         id: UnsandboxedObjectsBlocks.extensionId,
         name: translate("Objects"),
         color1: "#e765a8",
-        requires: {
-          usbVectors: [
-            "vec2"
-          ]
-        },
         provides: {
           usbIteration: [
             "mapValues"
@@ -140,8 +135,7 @@
                 defaultValue: translate("fruit"),
               },
               OBJECT: {
-                type: Scratch.ArgumentType.OBJECT,
-                text: translate("object")
+                type: Scratch.ArgumentType.OBJECT
               }
             }
           },
