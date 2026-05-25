@@ -3,8 +3,7 @@
 
   const Cast = Scratch.UnsandboxedMod.Cast;
   const translate = Scratch.translate;
-  const ARRAYS_MAP_OPCODE = "usbArrays_map";
-  const OBJECTS_MAP_OPCODE = "usbObjects_mapValues";
+  const TemporaryDataExtension = require("../temporary_data");
 
   /**
    * Unsandboxed blocks for iterating arrays and objects.
@@ -16,6 +15,46 @@
      * @type {string}
      */
     static extensionId = "usbIteration";
+
+    static resolveReporter(util, inputName, fallback = "") {
+      if (!util || typeof util.resolveParameterArgument !== "function") {
+        return Cast.toString(fallback);
+      }
+      return util.resolveParameterArgument(inputName, Cast.toString(fallback));
+    }
+
+    static assignResolvedParameterValue(target, value, util) {
+      if (typeof target === "string") {
+        util.thread.pushParam(target, value);
+        return;
+      }
+
+      if (!target || typeof target !== "object") {
+        return;
+      }
+
+      if (target.opcode === "data_variable") {
+        const variableField = target.fields?.VARIABLE;
+        if (!variableField) return;
+
+        const variableId = variableField.id || "";
+        const variableName = Cast.toString(variableField.value || variableField.name || "");
+        const variable = util.lookupOrCreateVariable(variableId, variableName);
+        if (!variable) return;
+
+        variable.value = value;
+        if (variable.isCloud) {
+          util.ioQuery("cloud", "requestUpdateVariable", [variable.name, value]);
+        }
+        return;
+      }
+
+      if (target.opcode === "usbTemporaryData_get") {
+        const variableName = TemporaryDataExtension.getTemporaryVariableNameFromReporter(target, util);
+        if (!variableName) return;
+        TemporaryDataExtension.setTemporaryVariable(value, variableName, util.thread);
+      }
+    }
 
     constructor() {
       this.vm = Scratch.vm;
@@ -175,12 +214,6 @@
       if (opcode === `${UnsandboxedIterationBlocks.extensionId}_forItem`) {
         return ["ITEM", "INDEX"];
       }
-      if (opcode === ARRAYS_MAP_OPCODE) {
-        return ["ITEM", "INDEX"];
-      }
-      if (opcode === OBJECTS_MAP_OPCODE) {
-        return ["KEY", "VALUE"];
-      }
       if (opcode === `${UnsandboxedIterationBlocks.extensionId}_forRange`) {
         return ["INDEX"];
       }
@@ -194,10 +227,34 @@
     }
 
     _getLoopInputReporterBlock(loopBlock, inputName) {
-      const inputBlock = loopBlock.getInputTargetBlock(inputName);
-      if (!inputBlock) return null;
-      if (inputBlock.type !== "argument_reporter_string_number") return null;
-      return inputBlock;
+      if (!loopBlock) return null;
+
+      const directInputBlock = loopBlock.getInputTargetBlock
+        ? loopBlock.getInputTargetBlock(inputName)
+        : null;
+      if (directInputBlock && directInputBlock.type === "argument_reporter_string_number") {
+        return directInputBlock;
+      }
+
+      // Fallback: resolve via VM block model ids so renaming still works
+      // even when Blockly doesn't return a target block directly for this input.
+      const editingTarget = this.runtime.getEditingTarget();
+      const container = editingTarget && editingTarget.blocks;
+      if (!container || !container.getBlock) return null;
+
+      const loopModel = container.getBlock(loopBlock.id);
+      const inputModel = loopModel && loopModel.inputs ? loopModel.inputs[inputName] : null;
+      if (!inputModel) return null;
+
+      const reporterId = inputModel.block || inputModel.shadow;
+      if (!reporterId) return null;
+
+      const workspace = loopBlock.workspace;
+      if (!workspace || !workspace.getBlockById) return null;
+
+      const reporter = workspace.getBlockById(reporterId);
+      if (!reporter || reporter.type !== "argument_reporter_string_number") return null;
+      return reporter;
     }
 
     _setLoopInputReporterLabel(loopBlock, inputName, label) {
@@ -351,8 +408,6 @@
     _isIterationOpcode(opcode) {
       return opcode === `${UnsandboxedIterationBlocks.extensionId}_forKeyValue` ||
         opcode === `${UnsandboxedIterationBlocks.extensionId}_forItem` ||
-        opcode === ARRAYS_MAP_OPCODE ||
-        opcode === OBJECTS_MAP_OPCODE ||
         opcode === `${UnsandboxedIterationBlocks.extensionId}_repeatWith` ||
         opcode === `${UnsandboxedIterationBlocks.extensionId}_forRange` ||
         opcode === `${UnsandboxedIterationBlocks.extensionId}_forChar`;
@@ -398,23 +453,12 @@
       return text.slice(0, index + 1);
     }
 
-    _getParameterName(util, inputName, fallback = "") {
-      const blockId = util?.thread?.peekStack && util.thread.peekStack();
-      if (!blockId) return Cast.toString(fallback);
+    _resolveParameterTarget(util, inputName, fallback = "") {
+      return UnsandboxedIterationBlocks.resolveReporter(util, inputName, fallback);
+    }
 
-      const block = util.target?.blocks?.getBlock(blockId);
-      if (!block || !block.inputs || !block.inputs[inputName]) {
-        return Cast.toString(fallback);
-      }
-
-      const inputId = block.inputs[inputName].block;
-      const inputBlock = util.target.blocks.getBlock(inputId);
-      const fieldValue = inputBlock?.fields?.VALUE?.value;
-      if (typeof fieldValue === "undefined" || fieldValue === null) {
-        return Cast.toString(fallback);
-      }
-
-      return Cast.toString(fieldValue);
+    _assignResolvedParameterValue(target, value, util) {
+      UnsandboxedIterationBlocks.assignResolvedParameterValue(target, value, util);
     }
 
     /**
@@ -532,8 +576,8 @@
      * @returns {boolean|undefined} Truthy while loop should continue.
      */
     forKeyValue(args, util) {
-      const keyName = this._getParameterName(util, "KEY", args.KEY);
-      const valueName = this._getParameterName(util, "VALUE", args.VALUE);
+      const keyTarget = this._resolveParameterTarget(util, "KEY", args.KEY);
+      const valueTarget = this._resolveParameterTarget(util, "VALUE", args.VALUE);
 
       if (typeof util.stackFrame.index === "undefined") {
         util.stackFrame.index = 0;
@@ -545,8 +589,8 @@
 
       if (util.stackFrame.index < keys.length) {
         util.thread.initParams();
-        util.thread.pushParam(keyName, keys[util.stackFrame.index]);
-        util.thread.pushParam(valueName, values[util.stackFrame.index]);
+        this._assignResolvedParameterValue(keyTarget, keys[util.stackFrame.index], util);
+        this._assignResolvedParameterValue(valueTarget, values[util.stackFrame.index], util);
         util.stackFrame.index++;
         util.startBranch(1, true);
       } else {
@@ -561,8 +605,8 @@
      * @returns {boolean|undefined} Truthy while loop should continue.
      */
     forItem(args, util) {
-      const itemName = this._getParameterName(util, "ITEM", args.ITEM);
-      const indexName = this._getParameterName(util, "INDEX", args.INDEX);
+      const itemTarget = this._resolveParameterTarget(util, "ITEM", args.ITEM);
+      const indexTarget = this._resolveParameterTarget(util, "INDEX", args.INDEX);
 
       if (typeof util.stackFrame.index === "undefined") {
         util.stackFrame.index = 0;
@@ -572,8 +616,8 @@
 
       if (util.stackFrame.index < array.length) {
         util.thread.initParams();
-        util.thread.pushParam(itemName, array[util.stackFrame.index]);
-        util.thread.pushParam(indexName, util.stackFrame.index + 1);
+        this._assignResolvedParameterValue(itemTarget, array[util.stackFrame.index], util);
+        this._assignResolvedParameterValue(indexTarget, util.stackFrame.index + 1, util);
         util.stackFrame.index++;
         util.startBranch(1, true);
       } else {
@@ -582,7 +626,7 @@
     }
 
     repeatWith(args, util) {
-      const indexName = this._getParameterName(util, "INDEX", args.INDEX);
+      const indexTarget = this._resolveParameterTarget(util, "INDEX", args.INDEX);
 
       if (typeof util.stackFrame.index === "undefined") {
         util.stackFrame.index = 0;
@@ -591,7 +635,7 @@
       const count = Math.max(0, Math.floor(Cast.toNumber(args.COUNT)));
       if (util.stackFrame.index < count) {
         util.thread.initParams();
-        util.thread.pushParam(indexName, util.stackFrame.index + 1);
+        this._assignResolvedParameterValue(indexTarget, util.stackFrame.index + 1, util);
         util.stackFrame.index++;
         util.startBranch(1, true);
       } else {
@@ -600,7 +644,7 @@
     }
 
     forRange(args, util) {
-      const indexName = this._getParameterName(util, "INDEX", args.INDEX);
+      const indexTarget = this._resolveParameterTarget(util, "INDEX", args.INDEX);
 
       if (typeof util.stackFrame.initialized === "undefined") {
         const start = Cast.toNumber(args.START);
@@ -629,7 +673,7 @@
 
       if (inRange) {
         util.thread.initParams();
-        util.thread.pushParam(indexName, current);
+        this._assignResolvedParameterValue(indexTarget, current, util);
         util.stackFrame.current = current + step;
         util.startBranch(1, true);
       } else {
@@ -638,8 +682,8 @@
     }
 
     forChar(args, util) {
-      const charName = this._getParameterName(util, "CHAR", args.CHAR);
-      const indexName = this._getParameterName(util, "INDEX", args.INDEX);
+      const charTarget = this._resolveParameterTarget(util, "CHAR", args.CHAR);
+      const indexTarget = this._resolveParameterTarget(util, "INDEX", args.INDEX);
 
       if (typeof util.stackFrame.index === "undefined") {
         util.stackFrame.index = 0;
@@ -648,15 +692,14 @@
       const text = Cast.toString(args.TEXT);
       if (util.stackFrame.index < text.length) {
         util.thread.initParams();
-        util.thread.pushParam(charName, text[util.stackFrame.index]);
-        util.thread.pushParam(indexName, util.stackFrame.index + 1);
+        this._assignResolvedParameterValue(charTarget, text[util.stackFrame.index], util);
+        this._assignResolvedParameterValue(indexTarget, util.stackFrame.index + 1, util);
         util.stackFrame.index++;
         util.startBranch(1, true);
       } else {
         util.startBranch(2, false);
       }
     }
-
   }
 
   Scratch.extensions.register(new UnsandboxedIterationBlocks());

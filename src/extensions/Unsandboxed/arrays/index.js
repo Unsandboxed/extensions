@@ -3,6 +3,7 @@
 
   const Cast = Scratch.UnsandboxedMod.Cast;
   const translate = Scratch.translate;
+  const IterationExtension = require("../iteration");
 
   /**
    * Unsandboxed blocks for working with JSON Arrays.
@@ -27,6 +28,16 @@
        * @type {Runtime}
        */
       this.runtime = this.vm.runtime;
+
+      if (Scratch.ensureParameterReporterRenamer) {
+        const renamer = Scratch.ensureParameterReporterRenamer(this.runtime, Scratch.gui, Cast);
+        if (renamer) {
+          renamer.register(`${UnsandboxedArraysBlocks.extensionId}_map`, ["ITEM", "INDEX"], {
+            ITEM: translate("item"),
+            INDEX: "#"
+          });
+        }
+      }
     }
 
     /**
@@ -49,6 +60,11 @@
         id: UnsandboxedArraysBlocks.extensionId,
         name: translate("Arrays"),
         color1: "#737fff",
+        provides: {
+          usbIteration: [
+            "map"
+          ],
+        },
         blocks: [
           {
             opcode: "newArray",
@@ -352,8 +368,8 @@
     }
 
     map(args, util) {
-      const itemName = this._getParameterName(util, "ITEM", args.ITEM);
-      const indexName = this._getParameterName(util, "INDEX", args.INDEX);
+      const itemTarget = this._resolveParameterTarget(util, "ITEM", args.ITEM);
+      const indexTarget = this._resolveParameterTarget(util, "INDEX", args.INDEX);
 
       if (typeof util.stackFrame.index === "undefined") {
         util.stackFrame.index = 0;
@@ -374,8 +390,8 @@
         util.stackFrame.index++;
 
         util.thread.initParams();
-        util.thread.pushParam(itemName, item);
-        util.thread.pushParam(indexName, util.stackFrame.pendingItemIndex + 1);
+        this._assignResolvedParameterValue(itemTarget, item, util);
+        this._assignResolvedParameterValue(indexTarget, util.stackFrame.pendingItemIndex + 1, util);
         util.startBranch(1, true);
       } else {
         return util.stackFrame.results;
@@ -396,23 +412,12 @@
       return reported;
     }
 
-    _getParameterName(util, inputName, fallback = "") {
-      const blockId = util?.thread?.peekStack && util.thread.peekStack();
-      if (!blockId) return Cast.toString(fallback);
+    _resolveParameterTarget(util, inputName, fallback = "") {
+      return IterationExtension.resolveReporter(util, inputName, fallback);
+    }
 
-      const block = util.target?.blocks?.getBlock(blockId);
-      if (!block || !block.inputs || !block.inputs[inputName]) {
-        return Cast.toString(fallback);
-      }
-
-      const inputId = block.inputs[inputName].block;
-      const inputBlock = util.target.blocks.getBlock(inputId);
-      const fieldValue = inputBlock?.fields?.VALUE?.value;
-      if (typeof fieldValue === "undefined" || fieldValue === null) {
-        return Cast.toString(fallback);
-      }
-
-      return Cast.toString(fieldValue);
+    _assignResolvedParameterValue(target, value, util) {
+      IterationExtension.assignResolvedParameterValue(target, value, util);
     }
 
     _getIndex(arg, length) {

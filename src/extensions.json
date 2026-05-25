@@ -6,5 +6,6 @@
   "usbObjects": "Unsandboxed/objects",
   "usbRuntime": "Unsandboxed/runtime",
   "usbTemporaryData": "Unsandboxed/temporary_data",
-  "usbTouch": "Unsandboxed/touch"
+  "usbTypes": "Unsandboxed/types",
+  "usbVectors": "Unsandboxed/vectors"
 }

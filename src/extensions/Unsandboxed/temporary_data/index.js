@@ -16,6 +16,32 @@
      */
     static extensionId = "usbTemporaryData";
 
+    static initTemporaryVariables(thread) {
+      if (!thread.variables) {
+        thread.variables = Object.create(null);
+      }
+      return thread.variables;
+    }
+
+    static setTemporaryVariable(value, name, thread) {
+      if (!thread) return value;
+      const variables = UnsandboxedTemporaryDataBlocks.initTemporaryVariables(thread);
+      variables[Cast.toString(name)] = value;
+      return value;
+    }
+
+    static getTemporaryVariableNameFromReporter(reporterBlock, util) {
+      const varInputId = reporterBlock?.inputs?.VAR?.block;
+      if (!varInputId) return "";
+
+      const menuBlock = util?.target?.blocks?.getBlock(varInputId);
+      if (!menuBlock || !menuBlock.fields) return "";
+
+      const fieldKey = Object.keys(menuBlock.fields)[0];
+      if (!fieldKey || !menuBlock.fields[fieldKey]) return "";
+      return Cast.toString(menuBlock.fields[fieldKey].value);
+    }
+
     constructor() {
       /**
        * The Scratch Virtual Machine instance.
@@ -160,11 +186,7 @@
      * @returns The variable object.
      */
     _initVariables(thread) {
-      if (!thread.variables) {
-        thread.variables = Object.create(null);
-      };
-
-      return thread.variables;
+      return UnsandboxedTemporaryDataBlocks.initTemporaryVariables(thread);
     };
 
     activeVariables(args, util) {
@@ -173,9 +195,8 @@
     };
 
     set(args, util) {
-      const variables = this._initVariables(util.thread);
       const name = Cast.toString(args.VAR);
-      variables[name] = args.VALUE;
+      UnsandboxedTemporaryDataBlocks.setTemporaryVariable(args.VALUE, name, util.thread);
     };
 
     change(args, util) {
@@ -185,7 +206,7 @@
       const castedValue = Cast.toNumber(variables[name]);
       const dValue = Cast.toNumber(args.VALUE);
       const newValue = castedValue + dValue;
-      variables[name] = newValue;
+      UnsandboxedTemporaryDataBlocks.setTemporaryVariable(newValue, name, util.thread);
     };
 
     get(args, util) {
@@ -209,8 +230,8 @@
       const values = Object.values(source);
 
       if (util.stackFrame.index < keys.length) {
-        variables[keyName] = keys[util.stackFrame.index];
-        variables[valueName] = values[util.stackFrame.index];
+        UnsandboxedTemporaryDataBlocks.setTemporaryVariable(keys[util.stackFrame.index], keyName, util.thread);
+        UnsandboxedTemporaryDataBlocks.setTemporaryVariable(values[util.stackFrame.index], valueName, util.thread);
         util.stackFrame.index++;
         util.startBranch(1, true);
       } else {
@@ -230,8 +251,8 @@
       const array = Cast.toArray(args.ARRAY);
 
       if (util.stackFrame.index < array.length) {
-        variables[itemName] = array[util.stackFrame.index];
-        variables[indexName] = util.stackFrame.index + 1;
+        UnsandboxedTemporaryDataBlocks.setTemporaryVariable(array[util.stackFrame.index], itemName, util.thread);
+        UnsandboxedTemporaryDataBlocks.setTemporaryVariable(util.stackFrame.index + 1, indexName, util.thread);
         util.stackFrame.index++;
         util.startBranch(1, true);
       } else {

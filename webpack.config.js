@@ -107,6 +107,10 @@ module.exports = {
                         type: 'asset/inline'
                     }
                 ]
+            },
+            {
+                test: /\.css$/i,
+                type: 'asset/source'
             }
         ]
     },
