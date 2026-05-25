@@ -119,47 +119,6 @@
           },
           "---",
           {
-            opcode: "forKeyValue",
-            blockType: Scratch.BlockType.LOOP,
-            text: translate("for [KEY] [VALUE] in [OBJECT]"),
-            arguments: {
-              KEY: {
-                type: Scratch.ArgumentType.STRING,
-                defaultValue: translate("key"),
-                menu: "variables",
-              },
-              VALUE: {
-                type: Scratch.ArgumentType.STRING,
-                defaultValue: translate("value"),
-                menu: "variables",
-              },
-              OBJECT: {
-                type: Scratch.ArgumentType.OBJECT,
-              },
-            },
-          },
-          {
-            opcode: "forItem",
-            blockType: Scratch.BlockType.LOOP,
-            text: translate("for [ITEM] [INDEX] in [ARRAY]"),
-            arguments: {
-              ITEM: {
-                type: Scratch.ArgumentType.STRING,
-                defaultValue: translate("item"),
-                menu: "variables",
-              },
-              INDEX: {
-                type: Scratch.ArgumentType.STRING,
-                defaultValue: translate("index"),
-                menu: "variables",
-              },
-              ARRAY: {
-                type: Scratch.ArgumentType.ARRAY,
-              },
-            },
-          },
-          "---",
-          {
             opcode: "newScope",
             blockType: Scratch.BlockType.CONDITIONAL,
             text: translate("new scope"),
@@ -214,50 +173,6 @@
       const name = Cast.toString(args.VAR);
 
       return variables[name] ?? "";
-    };
-
-    forKeyValue(args, util) {
-      const variables = this._initVariables(util.thread);
-      const keyName = Cast.toString(args.KEY);
-      const valueName = Cast.toString(args.VALUE);
-
-      if (typeof util.stackFrame.index === "undefined") {
-        util.stackFrame.index = 0;
-      }
-
-      const source = Cast.toObject(args.OBJECT);
-      const keys = Object.keys(source);
-      const values = Object.values(source);
-
-      if (util.stackFrame.index < keys.length) {
-        UnsandboxedTemporaryDataBlocks.setTemporaryVariable(keys[util.stackFrame.index], keyName, util.thread);
-        UnsandboxedTemporaryDataBlocks.setTemporaryVariable(values[util.stackFrame.index], valueName, util.thread);
-        util.stackFrame.index++;
-        util.startBranch(1, true);
-      } else {
-        util.startBranch(2, false);
-      }
-    };
-
-    forItem(args, util) {
-      const variables = this._initVariables(util.thread);
-      const itemName = Cast.toString(args.ITEM);
-      const indexName = Cast.toString(args.INDEX);
-
-      if (typeof util.stackFrame.index === "undefined") {
-        util.stackFrame.index = 0;
-      }
-
-      const array = Cast.toArray(args.ARRAY);
-
-      if (util.stackFrame.index < array.length) {
-        UnsandboxedTemporaryDataBlocks.setTemporaryVariable(array[util.stackFrame.index], itemName, util.thread);
-        UnsandboxedTemporaryDataBlocks.setTemporaryVariable(util.stackFrame.index + 1, indexName, util.thread);
-        util.stackFrame.index++;
-        util.startBranch(1, true);
-      } else {
-        util.startBranch(2, false);
-      }
     };
 
     /**
