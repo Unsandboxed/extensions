@@ -1,7 +1,7 @@
 {
   "usbArrays": "Unsandboxed/arrays",
   "usbBlendingEffects": "Unsandboxed/blending",
-  "usbClipMask": "Unsandboxed/clip_mask",
+  "usbClipMask": "Unsandboxed/clipping",
   "usbSpriteTags": "Unsandboxed/collision_tags",
   "usbComments": "Unsandboxed/comments",
   "usbIteration": "Unsandboxed/iteration",
