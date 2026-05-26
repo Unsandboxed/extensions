@@ -1,10 +1,14 @@
 {
   "usbArrays": "Unsandboxed/arrays",
+  "usbBlendingEffects": "Unsandboxed/blending",
+  "usbClipMask": "Unsandboxed/clip_mask",
+  "usbSpriteTags": "Unsandboxed/collision_tags",
   "usbComments": "Unsandboxed/comments",
   "usbIteration": "Unsandboxed/iteration",
   "usbMouse": "Unsandboxed/mouse",
   "usbObjects": "Unsandboxed/objects",
   "usbRuntime": "Unsandboxed/runtime",
+  "stretch": "Unsandboxed/stretch",
   "usbTemporaryData": "Unsandboxed/temporary_data",
   "usbTypes": "Unsandboxed/types",
   "usbVectors": "Unsandboxed/vectors"

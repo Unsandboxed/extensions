@@ -1,0 +1,7 @@
+{
+  "id": "usbBlendingEffects",
+  "name": "Blending",
+  "description": "Sprite compositing controls with blend modes, amount, blend targets, and behind effects.",
+  "createdBy": [],
+  "insetIconColor": "#8f5cff"
+}
