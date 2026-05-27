@@ -49,8 +49,13 @@
      * @returns {object} The cloned array
      */
     complexClone(value) {
-      return [...value]
+      return [...this._toSafeArray(value)]
     };
+
+    _toSafeArray(value) {
+      const casted = Cast.toArray(value);
+      return Array.isArray(casted) ? casted : [];
+    }
 
     /**
      * @returns {object} metadata for this extension and its blocks.
@@ -293,19 +298,19 @@
     }
 
     stringToArray(args) {
-      const array = this.complexClone(Cast.toArray(args.STRING));
+      const array = this.complexClone(this._toSafeArray(args.STRING));
       return array;
     }
 
     concat(args) {
       const arrays = Scratch.getOrderedExtendableValues(args, ["ARRAY"], [])
-        .map(value => this.complexClone(Cast.toArray(value)) ?? []);
+        .map(value => this.complexClone(this._toSafeArray(value)) ?? []);
 
       return arrays.reduce((result, current) => result.concat(current), []);
     }
 
     addItem(args) {
-      const array = this.complexClone(Cast.toArray(args.ARRAY)) ?? [];
+      const array = this.complexClone(this._toSafeArray(args.ARRAY)) ?? [];
       const item = args.ITEM ?? "";
 
       array.push(item);
@@ -313,7 +318,7 @@
     }
 
     deleteItem(args) {
-      const array = this.complexClone(Cast.toArray(args.ARRAY)) ?? [];
+      const array = this.complexClone(this._toSafeArray(args.ARRAY)) ?? [];
       const index = this._getIndex(args.INDEX, array.length);
 
       if (index === "_all_") return [];
@@ -323,7 +328,7 @@
     }
 
     insertItem(args) {
-      const array = this.complexClone(Cast.toArray(args.ARRAY)) ?? [];
+      const array = this.complexClone(this._toSafeArray(args.ARRAY)) ?? [];
       const item = args.ITEM ?? "";
       const index = this._getIndex(args.INDEX, array.length);
 
@@ -332,7 +337,7 @@
     }
 
     replaceItem(args) {
-      const array = this.complexClone(Cast.toArray(args.ARRAY)) ?? [];
+      const array = this.complexClone(this._toSafeArray(args.ARRAY)) ?? [];
       const item = args.ITEM ?? "";
       const index = this._getIndex(args.INDEX, array.length);
 
@@ -341,27 +346,27 @@
     }
 
     itemAtIndex(args) {
-      const array = Cast.toArray(args.ARRAY) ?? [];
+      const array = this._toSafeArray(args.ARRAY);
       const index = this._getIndex(args.INDEX, array.length);
 
       return array[index] ?? "";
     }
 
     itemNumber(args) {
-      const array = this.complexClone(Cast.toArray(args.ARRAY)) ?? [];
+      const array = this.complexClone(this._toSafeArray(args.ARRAY)) ?? [];
       const item = args.ITEM ?? "";
 
       return array.indexOf(item);
     }
 
     length(args) {
-      const array = this.complexClone(Cast.toArray(args.ARRAY)) ?? [];
+      const array = this.complexClone(this._toSafeArray(args.ARRAY)) ?? [];
 
       return array.length;
     }
 
     contains(args) {
-      const array = this.complexClone(Cast.toArray(args.ARRAY)) ?? [];
+      const array = this.complexClone(this._toSafeArray(args.ARRAY)) ?? [];
       const item = args.ITEM ?? "";
 
       return array.includes(item);
@@ -373,7 +378,7 @@
 
       if (typeof util.stackFrame.index === "undefined") {
         util.stackFrame.index = 0;
-        util.stackFrame.source = Cast.toArray(args.ARRAY);
+        util.stackFrame.source = this._toSafeArray(args.ARRAY);
         util.stackFrame.results = [];
         util.thread.peekStackFrame().weakScriptTop = true;
       }

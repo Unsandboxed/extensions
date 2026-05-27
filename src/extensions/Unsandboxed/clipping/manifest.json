@@ -1,7 +1,7 @@
 {
   "id": "usbClipMask",
-  "name": "Clipping Mask",
+  "name": "Clipping",
   "description": "Clip a sprite using one of its costumes.",
   "createdBy": [],
-  "insetIconColor": "#2d6a4f"
+  "insetIconColor": "#9966ff"
 }

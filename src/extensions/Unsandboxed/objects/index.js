@@ -52,6 +52,11 @@
       return { ...value }
     };
 
+    _toSafeArray(value) {
+      const casted = Cast.toArray(value);
+      return Array.isArray(casted) ? casted : [];
+    }
+
     /**
      * @returns {object} metadata for this extension and its blocks.
      */
@@ -345,7 +350,7 @@
 
     setKeys(args) {
       const object = this.complexClone(Cast.toObject(args.OBJECT));
-      const keys = this.complexClone(Cast.toArray(args.KEYS));
+      const keys = this._toSafeArray(args.KEYS);
       const value = args.VALUE;
 
       for (const key of keys) {
@@ -357,7 +362,7 @@
 
     deleteKeys(args) {
       const object = this.complexClone(Cast.toObject(args.OBJECT));
-      const keys = this.complexClone(Cast.toArray(args.KEYS));
+      const keys = this._toSafeArray(args.KEYS);
 
       for (const key of keys) {
         delete object[key];

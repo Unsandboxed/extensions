@@ -24,6 +24,8 @@
     static effectValuesKey = Symbol("blendingEffects.values");
     /** @type {symbol} */
     static effectTargetConfigsKey = Symbol("blendingEffects.targetConfigs");
+    /** @type {symbol} */
+    static effectRenderModeKey = Symbol("blendingEffects.renderMode");
 
     /** @type {string} */
     static modeDefault = "default";
@@ -31,6 +33,10 @@
     static defaultEffect = "blur";
     /** @type {string} */
     static rendererConfigMode = "effect";
+    /** @type {string} */
+    static effectRenderModeUnderlay = "underlay";
+    /** @type {string} */
+    static effectRenderModeReplace = "replace";
     /** @type {string[]} */
     static fallbackEffectNames = [
       "blur",
@@ -65,8 +71,18 @@
       target[UnsandboxedBlendingEffectsBlocks.effectValuesKey] = originalTarget && originalTarget[UnsandboxedBlendingEffectsBlocks.effectValuesKey]
         ? {...originalTarget[UnsandboxedBlendingEffectsBlocks.effectValuesKey]}
         : Object.create(null);
+      target[UnsandboxedBlendingEffectsBlocks.effectRenderModeKey] = originalTarget
+        ? this._normalizeEffectRenderMode(originalTarget[UnsandboxedBlendingEffectsBlocks.effectRenderModeKey])
+        : UnsandboxedBlendingEffectsBlocks.effectRenderModeUnderlay;
       target[UnsandboxedBlendingEffectsBlocks.effectTargetConfigsKey] = this._resolveEffectTargetConfigs(target);
       this._applyRendererState(target);
+    }
+
+    _normalizeEffectRenderMode(value) {
+      const mode = Cast.toString(value).trim().toLowerCase();
+      return mode === UnsandboxedBlendingEffectsBlocks.effectRenderModeReplace
+        ? UnsandboxedBlendingEffectsBlocks.effectRenderModeReplace
+        : UnsandboxedBlendingEffectsBlocks.effectRenderModeUnderlay;
     }
 
     _getTargets() {
@@ -194,9 +210,12 @@
         return [];
       }
 
+      const renderMode = this._normalizeEffectRenderMode(target[UnsandboxedBlendingEffectsBlocks.effectRenderModeKey]);
+
       return [{
         mode: UnsandboxedBlendingEffectsBlocks.rendererConfigMode,
-        effects
+        effects,
+        keepSpriteVisible: renderMode !== UnsandboxedBlendingEffectsBlocks.effectRenderModeReplace
       }];
     }
 
@@ -346,6 +365,19 @@
             text: translate("clear behind effects"),
             filter: [Scratch.TargetType.SPRITE]
           },
+          {
+            opcode: "setBehindRenderMode",
+            blockType: Scratch.BlockType.COMMAND,
+            text: translate("render behind effects as [MODE]"),
+            arguments: {
+              MODE: {
+                type: Scratch.ArgumentType.STRING,
+                menu: "behindRenderMode",
+                defaultValue: UnsandboxedBlendingEffectsBlocks.effectRenderModeUnderlay
+              }
+            },
+            filter: [Scratch.TargetType.SPRITE]
+          },
           "---",
           {
             opcode: "getEffectValue",
@@ -378,6 +410,13 @@
           effectType: {
             acceptReporters: true,
             items: "_getEffectMenuItems"
+          },
+          behindRenderMode: {
+            acceptReporters: true,
+            items: [
+              UnsandboxedBlendingEffectsBlocks.effectRenderModeUnderlay,
+              UnsandboxedBlendingEffectsBlocks.effectRenderModeReplace
+            ]
           }
         }
       };
@@ -460,6 +499,11 @@
     clearEffects(args, util) {
       util.target[UnsandboxedBlendingEffectsBlocks.effectValuesKey] = Object.create(null);
       util.target[UnsandboxedBlendingEffectsBlocks.effectTargetConfigsKey] = [];
+      this._applyRendererState(util.target);
+    }
+
+    setBehindRenderMode(args, util) {
+      util.target[UnsandboxedBlendingEffectsBlocks.effectRenderModeKey] = this._normalizeEffectRenderMode(args.MODE);
       this._applyRendererState(util.target);
     }
 
