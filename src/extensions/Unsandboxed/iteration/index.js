@@ -49,10 +49,17 @@
         return;
       }
 
-      if (target.opcode === "usbTemporaryData_get") {
+      if (target.opcode === "usbTemporaryData_get" || target.opcode === "usbTemporaryData_getStrict") {
         const variableName = TemporaryDataExtension.getTemporaryVariableNameFromReporter(target, util);
         if (!variableName) return;
-        TemporaryDataExtension.setTemporaryVariable(value, variableName, util.thread);
+
+        const preferredType = target.opcode === "usbTemporaryData_getStrict"
+          ? TemporaryDataExtension.normalizeVariableType(
+            TemporaryDataExtension.resolveInputValue(util?.target?.blocks, target, "TYPE")
+          )
+          : null;
+
+        TemporaryDataExtension.setTemporaryVariable(value, variableName, util.thread, util, preferredType);
       }
     }
 
