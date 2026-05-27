@@ -136,11 +136,6 @@
               }
             }
           },
-          {
-            opcode: "isClone",
-            blockType: Scratch.BlockType.BOOLEAN,
-            text: translate("is clone?")
-          },
           "---",
           {
             opcode: "thisTarget",
@@ -212,16 +207,6 @@
           },
           "---",
           {
-            opcode: "isTarget",
-            blockType: Scratch.BlockType.BOOLEAN,
-            text: translate("is [SPRITE] a valid sprite?"),
-            arguments: {
-              SPRITE: {
-                type: Scratch.ArgumentType.OBJECT
-              }
-            }
-          },
-          {
             opcode: "targetExists",
             blockType: Scratch.BlockType.BOOLEAN,
             text: translate("sprite [SPRITE] exists?"),
@@ -241,16 +226,6 @@
                 menu: "targetProperties",
                 defaultValue: "x position"
               },
-              SPRITE: {
-                type: Scratch.ArgumentType.OBJECT
-              }
-            }
-          },
-          {
-            opcode: "isCloneTarget",
-            blockType: Scratch.BlockType.BOOLEAN,
-            text: translate("is [SPRITE] a clone?"),
-            arguments: {
               SPRITE: {
                 type: Scratch.ArgumentType.OBJECT
               }
@@ -323,10 +298,6 @@
       const target = this._getTargetFromMenu(targetName, util);
       if (!target) return 0;
       return this._filterTargetsByType(target, args.TYPE).length;
-    }
-
-    isClone(args, util) {
-      return Boolean(util && util.target && !util.target.isOriginal);
     }
 
     createCloneOfWithTags(args, util) {
@@ -494,10 +465,6 @@
         .map(candidate => candidate.toValue());
     }
 
-    isTarget(args) {
-      return this._toSpriteTarget(this._spriteArg(args)) !== null;
-    }
-
     targetExists(args) {
       return this._toSpriteTarget(this._spriteArg(args)) !== null;
     }
@@ -545,11 +512,6 @@
       }
 
       return 0;
-    }
-
-    isCloneTarget(args) {
-      const sprite = this._toSpriteTarget(this._spriteArg(args));
-      return Boolean(sprite && !sprite.isOriginal);
     }
 
     deleteTarget(args) {

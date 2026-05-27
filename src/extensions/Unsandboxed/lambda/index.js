@@ -79,18 +79,9 @@
             opcode: "returnValue",
             blockType: Scratch.BlockType.COMMAND,
             text: translate("return [VALUE]"),
+            hideFromPalette: true,
             arguments: {
               VALUE: {
-                type: Scratch.ArgumentType.OBJECT
-              }
-            }
-          },
-          {
-            opcode: "isFunction",
-            blockType: Scratch.BlockType.BOOLEAN,
-            text: translate("is [FUNC] a function?"),
-            arguments: {
-              FUNC: {
                 type: Scratch.ArgumentType.OBJECT
               }
             }
@@ -155,10 +146,6 @@
 
       util.thread.__usbLambdaReturn = typeof args.VALUE === "undefined" ? "" : args.VALUE;
       util.stopThisScript(true);
-    }
-
-    isFunction(args) {
-      return !!this._toLambdaObject(args.FUNC);
     }
 
     _invokeLambda(args, util, returnResult) {
@@ -378,9 +365,12 @@
         }
 
         const localId = assignLocalId(blockId);
+        const normalizedOpcode = block.opcode === "procedures_return"
+          ? `${UnsandboxedLambdaBlocks.extensionId}_returnValue`
+          : block.opcode;
         const out = {
           id: localId,
-          opcode: block.opcode,
+          opcode: normalizedOpcode,
           next: null,
           parent: parentLocalId || null,
           inputs: {},
