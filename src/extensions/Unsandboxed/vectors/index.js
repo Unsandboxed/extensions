@@ -235,17 +235,6 @@
                 }
               }
             }
-          },
-          "---",
-          {
-            opcode: "goToVector",
-            blockType: Scratch.BlockType.COMMAND,
-            text: translate("go to [POSITION]"),
-            arguments: {
-              POSITION: {
-                type: Scratch.ArgumentType.POSITION
-              }
-            }
           }
         ],
         menus: {
@@ -405,14 +394,6 @@
       }
 
       return this._makeVector(closestVector);
-    }
-
-    goToVector(args, util) {
-      if (!util || !util.target || typeof util.target.setXY !== "function") {
-        return;
-      }
-      const vector = this._toVector(Cast.toArray(args.POSITION));
-      util.target.setXY(vector[0] || 0, vector[1] || 0);
     }
 
     _createBuiltInType(typeId, payload) {

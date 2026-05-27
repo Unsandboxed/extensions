@@ -1,7 +1,7 @@
 {
   "id": "usbClonesPlus",
-  "name": "Clones Plus",
+  "name": "Clones Plus V2",
   "description": "Clone and sprite reference utilities with type filtering, tag tools, and safe clone control.",
   "createdBy": [],
-  "insetIconColor": "#62a84f"
+  "insetIconColor": "#ffab19"
 }

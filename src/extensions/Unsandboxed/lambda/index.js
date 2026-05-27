@@ -104,7 +104,10 @@
       const params = this._parseParamNames(
         parameterInput.name || args.PARAM
       );
-      const bundleArrayArgs = parameterInput.opcode === "argument_reporter_array" && params.length === 1;
+      const bundleArrayArgs = params.length === 1 && (
+        parameterInput.opcode === "argument_reporter_array" ||
+        params[0] === "arguments"
+      );
       const serialized = this._serializeBranchStack(util);
       if (!serialized) {
         return "";
@@ -164,20 +167,7 @@
         return returnResult ? "" : undefined;
       }
 
-      const orderedArgs = typeof Scratch.getOrderedExtendableValues === "function"
-        ? Scratch.getOrderedExtendableValues(args, ["ARGS"], undefined)
-        : null;
-
-      let argValues = [];
-      if (Array.isArray(orderedArgs) && orderedArgs.length > 1) {
-        // Multiple extendable ARGS slots: treat each slot as one argument.
-        argValues = orderedArgs;
-      } else {
-        const rawArgs = Array.isArray(orderedArgs) && orderedArgs.length === 1
-          ? orderedArgs[0]
-          : args.ARGS;
-        argValues = this._coerceInvocationArgs(rawArgs);
-      }
+      const argValues = this._coerceInvocationArgs(args.ARGS);
 
       const result = this._runSerializedStackLambda(fn, argValues, util);
       if (result && typeof result.then === "function") {
