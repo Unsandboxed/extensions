@@ -18,6 +18,13 @@
         id: UnsandboxedSpriteTags.extensionId,
         name: translate("Sprite Tags"),
         color1: "#5cb1d6",
+        provides: {
+          usbClonesPlus: [
+            "addTagsToTarget",
+            "removeTagsFromTarget",
+            "tagsOfTarget"
+          ]
+        },
         blocks: [
           {
             opcode: "addTag",
@@ -81,6 +88,45 @@
               TARGET: {
                 type: Scratch.ArgumentType.STRING,
                 menu: "targets"
+              }
+            }
+          },
+          {
+            opcode: "addTagsToTarget",
+            blockType: Scratch.BlockType.COMMAND,
+            text: translate("add sprite tags [TAGS] to [SPRITE]"),
+            hideFromPalette: true,
+            arguments: {
+              TAGS: {
+                type: Scratch.ArgumentType.ARRAY
+              },
+              SPRITE: {
+                type: Scratch.ArgumentType.OBJECT
+              }
+            }
+          },
+          {
+            opcode: "removeTagsFromTarget",
+            blockType: Scratch.BlockType.COMMAND,
+            text: translate("remove sprite tags [TAGS] from [SPRITE]"),
+            hideFromPalette: true,
+            arguments: {
+              TAGS: {
+                type: Scratch.ArgumentType.ARRAY
+              },
+              SPRITE: {
+                type: Scratch.ArgumentType.OBJECT
+              }
+            }
+          },
+          {
+            opcode: "tagsOfTarget",
+            blockType: Scratch.BlockType.ARRAY,
+            text: translate("sprite tags of [SPRITE]"),
+            hideFromPalette: true,
+            arguments: {
+              SPRITE: {
+                type: Scratch.ArgumentType.OBJECT
               }
             }
           },
@@ -203,6 +249,56 @@
         return Clone(target.tags);
     }
 
+    addTagsToTarget(args) {
+      const sprite = this._toSpriteTarget(this._spriteArg(args));
+      if (!sprite) {
+        return;
+      }
+      const tags = this._parseTagArray(args.TAGS);
+      if (tags.length === 0) {
+        return;
+      }
+
+      this._ensureTags(sprite);
+      let changed = false;
+      for (const tag of tags) {
+        if (!sprite.tags.includes(tag)) {
+          sprite.tags.push(tag);
+          changed = true;
+        }
+      }
+      if (changed) {
+        this._notifyTagsChanged(sprite);
+      }
+    }
+
+    removeTagsFromTarget(args) {
+      const sprite = this._toSpriteTarget(this._spriteArg(args));
+      if (!sprite) {
+        return;
+      }
+      const tags = this._parseTagArray(args.TAGS);
+      if (tags.length === 0) {
+        return;
+      }
+
+      this._ensureTags(sprite);
+      const before = sprite.tags.length;
+      sprite.tags = sprite.tags.filter(tag => !tags.includes(tag));
+      if (sprite.tags.length !== before) {
+        this._notifyTagsChanged(sprite);
+      }
+    }
+
+    tagsOfTarget(args) {
+      const sprite = this._toSpriteTarget(this._spriteArg(args));
+      if (!sprite) {
+        return [];
+      }
+      this._ensureTags(sprite);
+      return Clone(sprite.tags);
+    }
+
     touchingTargetWithTag(args, util) {
       const targetName = Cast.toString(args.TARGET);
       const type = Cast.toString(args.TYPE);
@@ -252,6 +348,47 @@
       if (targetName === "_stage_") target = this.runtime.getTargetForStage();
       this._ensureTags(target);
       return target;
+    }
+
+    _spriteArg(args) {
+      return args.SPRITE || null;
+    }
+
+    _spriteIdFromAny(inputSprite) {
+      if (!inputSprite || typeof inputSprite !== "object") {
+        return "";
+      }
+
+      if (
+        this.runtime &&
+        typeof this.runtime.getCustomTypeIdForValue === "function" &&
+        this.runtime.getCustomTypeIdForValue(inputSprite) === "target"
+      ) {
+        return Cast.toString(inputSprite.spriteId || "");
+      }
+
+      return Cast.toString(inputSprite.spriteId || "");
+    }
+
+    _toSpriteTarget(inputSprite) {
+      const spriteId = this._spriteIdFromAny(inputSprite);
+      if (!spriteId) {
+        return null;
+      }
+      return this.runtime.getTargetById(spriteId) || null;
+    }
+
+    _parseTagArray(rawValue) {
+      const values = Cast.toArray(rawValue);
+      const tags = [];
+      const seen = new Set();
+      for (const value of values) {
+        const tag = Cast.toString(value).trim();
+        if (!tag || seen.has(tag)) continue;
+        seen.add(tag);
+        tags.push(tag);
+      }
+      return tags;
     }
 
     _ensureTags(target) {
