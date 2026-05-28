@@ -12,6 +12,35 @@
     constructor() {
       this.vm = Scratch.vm;
       this.runtime = this.vm.runtime;
+
+      this.runtime.on("targetWasCreated", newTarget => {
+        if (!newTarget || newTarget.isOriginal) {
+          return;
+        }
+
+        var cloneValue = newTarget.toValue ? newTarget.toValue() : null;
+        this.runtime.startHats(
+          `${UnsandboxedClonesPlusBlocks.extensionId}_whenCloneStarts`,
+          {},
+          newTarget,
+          {clone: cloneValue}
+        );
+
+        var parentTarget =
+          newTarget.sprite && Array.isArray(newTarget.sprite.clones)
+            ? (newTarget.sprite.clones[0] || null)
+            : null;
+        if (!parentTarget) {
+          return;
+        }
+
+        this.runtime.startHats(
+          `${UnsandboxedClonesPlusBlocks.extensionId}_whenCloneOfSpriteStarts`,
+          {TARGET: parentTarget.getName()},
+          parentTarget,
+          {clone: cloneValue}
+        );
+      });
     }
 
     getInfo() {
@@ -23,19 +52,42 @@
         color3: "#CF8B17",
         blocks: [
           {
-            opcode: "createCloneOfWithTags",
-            blockType: Scratch.BlockType.COMMAND,
-            text: translate("create clone of [TARGET] with tags [TAGS]"),
+            opcode: "whenCloneStarts",
+            blockType: Scratch.BlockType.HAT,
+            text: translate("when I start as a clone and [CONDITION]"),
+            filter: [Scratch.TargetType.SPRITE],
+            isEdgeActivated: false,
             arguments: {
-              TARGET: {
-                type: Scratch.ArgumentType.STRING,
-                menu: "targets"
+              CLONE: {
+                type: Scratch.ArgumentType.PARAMETER,
+                defaultValue: "clone"
               },
-              TAGS: {
-                type: Scratch.ArgumentType.ARRAY
+              CONDITION: {
+                type: Scratch.ArgumentType.BOOLEAN
               }
             }
           },
+          {
+            opcode: "whenCloneOfSpriteStarts",
+            blockType: Scratch.BlockType.HAT,
+            text: translate("when [CLONE] of [TARGET] is created"),
+            filter: [Scratch.TargetType.SPRITE],
+            shouldRestartExistingThreads: true,
+            isEdgeActivated: false,
+            arguments: {
+              CLONE: {
+                type: Scratch.ArgumentType.PARAMETER,
+                defaultValue: "clone"
+              },
+              TARGET: {
+                type: Scratch.ArgumentType.STRING,
+                menu: "targets"
+              }
+            }
+          },
+          "---",
+
+          // Creation and execution
           {
             opcode: "createCloneOfThen",
             blockType: Scratch.BlockType.COMMAND,
@@ -45,21 +97,6 @@
               TARGET: {
                 type: Scratch.ArgumentType.STRING,
                 menu: "targets"
-              }
-            }
-          },
-          {
-            opcode: "createCloneOfWithTagsThen",
-            blockType: Scratch.BlockType.COMMAND,
-            text: translate("create clone of [TARGET] with tags [TAGS] then"),
-            branchCount: 1,
-            arguments: {
-              TARGET: {
-                type: Scratch.ArgumentType.STRING,
-                menu: "targets"
-              },
-              TAGS: {
-                type: Scratch.ArgumentType.ARRAY
               }
             }
           },
@@ -75,68 +112,8 @@
             }
           },
           "---",
-          {
-            opcode: "deleteClonesOf",
-            blockType: Scratch.BlockType.COMMAND,
-            text: translate("delete clones for [TARGET]"),
-            arguments: {
-              TARGET: {
-                type: Scratch.ArgumentType.STRING,
-                menu: "targets"
-              }
-            }
-          },
-          {
-            opcode: "deleteClonesOfWithAnyTag",
-            blockType: Scratch.BlockType.COMMAND,
-            text: translate("delete clones for [TARGET] with any tag in [TAGS]"),
-            arguments: {
-              TARGET: {
-                type: Scratch.ArgumentType.STRING,
-                menu: "targets"
-              },
-              TAGS: {
-                type: Scratch.ArgumentType.ARRAY
-              }
-            }
-          },
-          {
-            opcode: "cloneCountOfWithAnyTag",
-            blockType: Scratch.BlockType.REPORTER,
-            text: translate("number of [TYPE] for [TARGET] with any tag in [TAGS]"),
-            arguments: {
-              TYPE: {
-                type: Scratch.ArgumentType.STRING,
-                menu: "types",
-                defaultValue: "clone"
-              },
-              TARGET: {
-                type: Scratch.ArgumentType.STRING,
-                menu: "targets"
-              },
-              TAGS: {
-                type: Scratch.ArgumentType.ARRAY
-              }
-            }
-          },
-          "---",
-          {
-            opcode: "cloneCountOf",
-            blockType: Scratch.BlockType.REPORTER,
-            text: translate("number of [TYPE] for [TARGET]"),
-            arguments: {
-              TYPE: {
-                type: Scratch.ArgumentType.STRING,
-                menu: "types",
-                defaultValue: "clone"
-              },
-              TARGET: {
-                type: Scratch.ArgumentType.STRING,
-                menu: "targets"
-              }
-            }
-          },
-          "---",
+
+          // Target references
           {
             opcode: "thisTarget",
             blockType: Scratch.BlockType.OBJECT,
@@ -153,59 +130,9 @@
               }
             }
           },
-          {
-            opcode: "clonesOf",
-            blockType: Scratch.BlockType.ARRAY,
-            text: translate("[TYPE] for [TARGET]"),
-            arguments: {
-              TYPE: {
-                type: Scratch.ArgumentType.STRING,
-                menu: "types",
-                defaultValue: "clone"
-              },
-              TARGET: {
-                type: Scratch.ArgumentType.STRING,
-                menu: "targets"
-              }
-            }
-          },
-          {
-            opcode: "clonesOfWithAnyTags",
-            blockType: Scratch.BlockType.ARRAY,
-            text: translate("[TYPE] for [TARGET] with any tag in [TAGS]"),
-            arguments: {
-              TYPE: {
-                type: Scratch.ArgumentType.STRING,
-                menu: "types",
-                defaultValue: "clone"
-              },
-              TARGET: {
-                type: Scratch.ArgumentType.STRING,
-                menu: "targets"
-              },
-              TAGS: {
-                type: Scratch.ArgumentType.ARRAY
-              }
-            }
-          },
           "---",
-          {
-            opcode: "clonesOfTouchingMe",
-            blockType: Scratch.BlockType.ARRAY,
-            text: translate("[TYPE] for [TARGET] touching me"),
-            arguments: {
-              TYPE: {
-                type: Scratch.ArgumentType.STRING,
-                menu: "types",
-                defaultValue: "clone"
-              },
-              TARGET: {
-                type: Scratch.ArgumentType.STRING,
-                menu: "targets"
-              }
-            }
-          },
-          "---",
+
+          // Target status and properties
           {
             opcode: "targetExists",
             blockType: Scratch.BlockType.BOOLEAN,
@@ -213,6 +140,21 @@
             arguments: {
               SPRITE: {
                 type: Scratch.ArgumentType.OBJECT
+              }
+            }
+          },
+          {
+            opcode: "targetIsType",
+            blockType: Scratch.BlockType.BOOLEAN,
+            text: translate("[SPRITE] is [TYPE]?"),
+            arguments: {
+              SPRITE: {
+                type: Scratch.ArgumentType.OBJECT
+              },
+              TYPE: {
+                type: Scratch.ArgumentType.STRING,
+                menu: "typesSingularWithDeleted",
+                defaultValue: "clone"
               }
             }
           },
@@ -232,6 +174,117 @@
             }
           },
           "---",
+
+          // Collections and counts
+          {
+            opcode: "clonesOf",
+            blockType: Scratch.BlockType.ARRAY,
+            text: translate("[TYPE] of [TARGET]"),
+            arguments: {
+              TYPE: {
+                type: Scratch.ArgumentType.STRING,
+                menu: "typesPlural",
+                defaultValue: "clone"
+              },
+              TARGET: {
+                type: Scratch.ArgumentType.STRING,
+                menu: "targets"
+              }
+            }
+          },
+          {
+            opcode: "cloneCountOf",
+            blockType: Scratch.BlockType.REPORTER,
+            text: translate("number of [TYPE] of [TARGET]"),
+            arguments: {
+              TYPE: {
+                type: Scratch.ArgumentType.STRING,
+                menu: "typesPlural",
+                defaultValue: "clone"
+              },
+              TARGET: {
+                type: Scratch.ArgumentType.STRING,
+                menu: "targets"
+              }
+            }
+          },
+          {
+            opcode: "projectTargetCount",
+            blockType: Scratch.BlockType.REPORTER,
+            text: translate("number of [TYPE] in project"),
+            arguments: {
+              TYPE: {
+                type: Scratch.ArgumentType.STRING,
+                menu: "typesPlural",
+                defaultValue: "clone"
+              }
+            }
+          },
+          "---",
+
+          // Spatial queries
+          {
+            opcode: "clonesOfTouchingMe",
+            blockType: Scratch.BlockType.ARRAY,
+            text: translate("[TYPE] of [TARGET] touching me"),
+            arguments: {
+              TYPE: {
+                type: Scratch.ArgumentType.STRING,
+                menu: "typesPlural",
+                defaultValue: "clone"
+              },
+              TARGET: {
+                type: Scratch.ArgumentType.STRING,
+                menu: "targets"
+              }
+            }
+          },
+          {
+            opcode: "targetTypeTouchingMe",
+            blockType: Scratch.BlockType.BOOLEAN,
+            text: translate("touching [TYPE] of [TARGET]?"),
+            arguments: {
+              TYPE: {
+                type: Scratch.ArgumentType.STRING,
+                menu: "typesSingular",
+                defaultValue: "clone"
+              },
+              TARGET: {
+                type: Scratch.ArgumentType.STRING,
+                menu: "targets"
+              }
+            }
+          },
+          {
+            opcode: "distanceToNearestTargetType",
+            blockType: Scratch.BlockType.REPORTER,
+            text: translate("distance to nearest [TYPE] of [TARGET]"),
+            arguments: {
+              TYPE: {
+                type: Scratch.ArgumentType.STRING,
+                menu: "typesSingular",
+                defaultValue: "clone"
+              },
+              TARGET: {
+                type: Scratch.ArgumentType.STRING,
+                menu: "targets"
+              }
+            }
+          },
+          "---",
+
+          // Destructive actions
+          {
+            opcode: "deleteClonesOf",
+            blockType: Scratch.BlockType.COMMAND,
+            text: translate("delete clones of [TARGET]"),
+            arguments: {
+              TARGET: {
+                type: Scratch.ArgumentType.STRING,
+                menu: "targets"
+              }
+            }
+          },
           {
             opcode: "deleteTarget",
             blockType: Scratch.BlockType.COMMAND,
@@ -255,7 +308,7 @@
           "---"
         ],
         menus: {
-          types: {
+          typesPlural: {
             acceptReporters: false,
             items: [
               {
@@ -267,7 +320,24 @@
                 value: "parent"
               },
               {
-                text: translate("any target"),
+                text: translate("alive targets"),
+                value: "anything"
+              }
+            ]
+          },
+          typesSingular: {
+            acceptReporters: false,
+            items: [
+              {
+                text: translate("clone"),
+                value: "clone"
+              },
+              {
+                text: translate("parent"),
+                value: "parent"
+              },
+              {
+                text: translate("alive"),
                 value: "anything"
               }
             ]
@@ -275,6 +345,27 @@
           targets: {
             acceptReporters: true,
             items: "_getTargets"
+          },
+          typesSingularWithDeleted: {
+            acceptReporters: false,
+            items: [
+              {
+                text: translate("clone"),
+                value: "clone"
+              },
+              {
+                text: translate("parent"),
+                value: "parent"
+              },
+              {
+                text: translate("alive"),
+                value: "anything"
+              },
+              {
+                text: translate("deleted"),
+                value: "deleted"
+              }
+            ]
           },
           targetProperties: {
             acceptReporters: false,
@@ -293,20 +384,22 @@
       };
     }
 
+    whenCloneStarts(args, util) {
+      if (!util || !util.target || util.target.isOriginal) {
+        return false;
+      }
+      return Cast.toBoolean(args.CONDITION);
+    }
+
+    whenCloneOfSpriteStarts() {
+      return true;
+    }
+
     cloneCountOf(args, util) {
       const targetName = Cast.toString(args.TARGET);
       const target = this._getTargetFromMenu(targetName, util);
       if (!target) return 0;
       return this._filterTargetsByType(target, args.TYPE).length;
-    }
-
-    createCloneOfWithTags(args, util) {
-      const targetName = Cast.toString(args.TARGET);
-      const target = this._getTargetFromMenu(targetName, util);
-      if (!target || target.isStage) return;
-
-      const tags = this._parseTagArray(args.TAGS);
-      this._createCloneWithTags(target, tags);
     }
 
     createCloneOfThen(args, util) {
@@ -319,25 +412,6 @@
       if (!sourceBlocks || !target || target.isStage) return;
 
       const newClone = this._createCloneWithTags(target, []);
-      if (!newClone || !newClone.blocks) return;
-
-      const clonedTopBlockId = this._cloneSubstackOnTarget(sourceBlocks, sourceTopBlockId, newClone);
-      if (!clonedTopBlockId) return;
-
-      return this._runThreadOnTarget(clonedTopBlockId, newClone);
-    }
-
-    createCloneOfWithTagsThen(args, util) {
-      const sourceTopBlockId = this._getBranchTopBlockId(util);
-      if (!sourceTopBlockId) return;
-
-      const sourceBlocks = util?.target?.blocks;
-      const targetName = Cast.toString(args.TARGET);
-      const target = this._getTargetFromMenu(targetName, util);
-      if (!sourceBlocks || !target || target.isStage) return;
-
-      const tags = this._parseTagArray(args.TAGS);
-      const newClone = this._createCloneWithTags(target, tags);
       if (!newClone || !newClone.blocks) return;
 
       const clonedTopBlockId = this._cloneSubstackOnTarget(sourceBlocks, sourceTopBlockId, newClone);
@@ -360,24 +434,6 @@
       return this._runThreadOnTarget(clonedTopBlockId, target);
     }
 
-    deleteClonesOfWithAnyTag(args, util) {
-      const targetName = Cast.toString(args.TARGET);
-      const target = this._getTargetFromMenu(targetName, util);
-      if (!target) return;
-
-      const tags = this._parseTagArray(args.TAGS);
-      if (tags.length === 0) return;
-
-      const candidates = this._filterTargetsByType(target, "clone");
-      for (const candidate of candidates) {
-        if (!candidate || candidate.isOriginal) continue;
-        this._ensureTags(candidate);
-        if (!tags.some(tag => candidate.tags.includes(tag))) continue;
-        this.runtime.disposeTarget(candidate);
-        this.runtime.stopForTarget(candidate);
-      }
-    }
-
     deleteClonesOf(args, util) {
       const targetName = Cast.toString(args.TARGET);
       const target = this._getTargetFromMenu(targetName, util);
@@ -389,22 +445,6 @@
         this.runtime.disposeTarget(candidate);
         this.runtime.stopForTarget(candidate);
       }
-    }
-
-    cloneCountOfWithAnyTag(args, util) {
-      const targetName = Cast.toString(args.TARGET);
-      const target = this._getTargetFromMenu(targetName, util);
-      if (!target) return 0;
-
-      const tags = this._parseTagArray(args.TAGS);
-      if (tags.length === 0) return 0;
-
-      const candidates = this._filterTargetsByType(target, args.TYPE);
-      return candidates.filter(candidate => {
-        if (!candidate) return false;
-        this._ensureTags(candidate);
-        return tags.some(tag => candidate.tags.includes(tag));
-      }).length;
     }
 
     thisTarget(args, util) {
@@ -427,28 +467,6 @@
         .map(candidate => candidate.toValue());
     }
 
-    clonesOfWithAnyTags(args, util) {
-      const target = this._getTargetFromMenu(Cast.toString(args.TARGET), util);
-      if (!target) {
-        return [];
-      }
-
-      const tags = this._parseTagArray(args.TAGS);
-      if (tags.length === 0) {
-        return [];
-      }
-
-      return this._filterTargetsByType(target, args.TYPE)
-        .filter(candidate => {
-          if (!candidate || typeof candidate.toValue !== "function") {
-            return false;
-          }
-          this._ensureTags(candidate);
-          return tags.some(tag => candidate.tags.includes(tag));
-        })
-        .map(candidate => candidate.toValue());
-    }
-
     clonesOfTouchingMe(args, util) {
       const currentTarget = util && util.target;
       if (!currentTarget) {
@@ -467,6 +485,83 @@
 
     targetExists(args) {
       return this._toSpriteTarget(this._spriteArg(args)) !== null;
+    }
+
+    targetIsType(args) {
+      const type = Cast.toString(args.TYPE || "clone").toLowerCase();
+      const sprite = this._toSpriteTarget(this._spriteArg(args));
+      if (!sprite) {
+        return type === "deleted";
+      }
+
+      if (type === "clone") {
+        return !sprite.isOriginal;
+      }
+
+      if (type === "parent") {
+        return sprite.isOriginal;
+      }
+
+      if (type === "deleted") {
+        return false;
+      }
+
+      return true;
+    }
+
+    targetTypeTouchingMe(args, util) {
+      const currentTarget = util && util.target;
+      if (!currentTarget) {
+        return false;
+      }
+
+      const target = this._getTargetFromMenu(Cast.toString(args.TARGET), util);
+      if (!target) {
+        return false;
+      }
+
+      return this._filterTargetsByType(target, args.TYPE)
+        .some(candidate => this._isTouchingTarget(currentTarget, candidate));
+    }
+
+    distanceToNearestTargetType(args, util) {
+      const currentTarget = util && util.target;
+      if (!currentTarget) {
+        return 10000;
+      }
+
+      const target = this._getTargetFromMenu(Cast.toString(args.TARGET), util);
+      if (!target) {
+        return 10000;
+      }
+
+      var nearest = null;
+      for (const candidate of this._filterTargetsByType(target, args.TYPE)) {
+        if (!candidate || candidate.id === currentTarget.id) {
+          continue;
+        }
+        const distance = this._distanceBetweenTargets(currentTarget, candidate);
+        if (distance === null) {
+          continue;
+        }
+        if (nearest === null || distance < nearest) {
+          nearest = distance;
+        }
+      }
+
+      return nearest === null ? 10000 : nearest;
+    }
+
+    projectTargetCount(args) {
+      const type = Cast.toString(args.TYPE || "clone").toLowerCase();
+      const allTargets = this.runtime.targets.filter(target => target && !target.isStage);
+      if (type === "parent") {
+        return allTargets.filter(target => target.isOriginal).length;
+      }
+      if (type === "clone") {
+        return allTargets.filter(target => !target.isOriginal).length;
+      }
+      return allTargets.length;
     }
 
     targetProperty(args) {
@@ -611,19 +706,6 @@
       return this.runtime.getTargetById(spriteId) || null;
     }
 
-    _parseTagArray(rawValue) {
-      const values = Cast.toArray(rawValue);
-      const tags = [];
-      const seen = new Set();
-      for (const value of values) {
-        const tag = Cast.toString(value).trim();
-        if (!tag || seen.has(tag)) continue;
-        seen.add(tag);
-        tags.push(tag);
-      }
-      return tags;
-    }
-
     _isTouchingTarget(currentTarget, candidate) {
       if (!this.vm.renderer || !currentTarget || !candidate) {
         return false;
@@ -639,6 +721,20 @@
       }
 
       return this.vm.renderer.isTouchingDrawables(currentDrawable, [candidateDrawable]);
+    }
+
+    _distanceBetweenTargets(a, b) {
+      if (!a || !b) {
+        return null;
+      }
+      if (typeof a.x !== "number" || typeof a.y !== "number" ||
+          typeof b.x !== "number" || typeof b.y !== "number") {
+        return null;
+      }
+
+      var dx = a.x - b.x;
+      var dy = a.y - b.y;
+      return Math.sqrt((dx * dx) + (dy * dy));
     }
 
     _createCloneWithTags(target, tags) {
@@ -760,11 +856,6 @@
 
         this.runtime.on("AFTER_EXECUTE", handleAfterExecute);
       });
-    }
-
-    _ensureTags(target) {
-      if (!target) return;
-      if (!Array.isArray(target.tags)) target.tags = [];
     }
 
     _notifyTagsChanged(target) {

@@ -32,7 +32,7 @@
         // `provides` format: { targetExtensionId: [thisExtensionOpcode, ...] }
         // VM can show these blocks under target flyouts when both extensions are available.
         provides: {
-          usbPathfinding: ["addTagToMyself", "firstTagOfMyself"]
+          usbPathfinding: ["addTagToMyself", "---", "firstTagOfMyself"]
         },
 
         blocks: [

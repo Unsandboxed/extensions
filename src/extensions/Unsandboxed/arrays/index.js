@@ -236,6 +236,30 @@
               },
             },
           },
+          {
+            opcode: "isValidArray",
+            blockType: Scratch.BlockType.BOOLEAN,
+            text: translate("is [ARRAY] valid?"),
+            arguments: {
+              ARRAY: {
+                type: Scratch.ArgumentType.ARRAY
+              },
+            },
+          },
+          {
+            opcode: "repeatArray",
+            blockType: Scratch.BlockType.ARRAY,
+            text: translate("repeat [ARRAY] [TIMES] times"),
+            arguments: {
+              ARRAY: {
+                type: Scratch.ArgumentType.ARRAY
+              },
+              TIMES: {
+                type: Scratch.ArgumentType.NUMBER,
+                defaultValue: 2,
+              },
+            },
+          },
           "---",
           {
             opcode: "map",
@@ -370,6 +394,22 @@
       const item = args.ITEM ?? "";
 
       return array.includes(item);
+    }
+
+    isValidArray(args) {
+      return Array.isArray(args.ARRAY);
+    }
+
+    repeatArray(args) {
+      const source = this.complexClone(this._toSafeArray(args.ARRAY)) ?? [];
+      const times = Math.max(0, Math.floor(Cast.toNumber(args.TIMES)));
+      const result = [];
+
+      for (let i = 0; i < times; i++) {
+        result.push(...source);
+      }
+
+      return result;
     }
 
     map(args, util) {

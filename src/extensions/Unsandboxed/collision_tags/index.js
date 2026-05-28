@@ -3,6 +3,7 @@
 
   const Cast = Scratch.UnsandboxedMod.Cast;
   const Clone = Scratch.UnsandboxedMod.Clone.structured;
+  const uid = Scratch.UnsandboxedMod.helpers.uid;
   const translate = Scratch.translate;
 
   class UnsandboxedSpriteTags {
@@ -20,6 +21,13 @@
         color1: "#5cb1d6",
         provides: {
           usbClonesPlus: [
+            "createCloneOfWithTags",
+            "createCloneOfWithTagsThen",
+            "---",
+            "deleteClonesOfWithAnyTag",
+            "cloneCountOfWithAnyTag",
+            "clonesOfWithAnyTags",
+            "---",
             "addTagsToTarget",
             "removeTagsFromTarget",
             "tagsOfTarget"
@@ -127,6 +135,92 @@
             arguments: {
               SPRITE: {
                 type: Scratch.ArgumentType.OBJECT
+              }
+            }
+          },
+          {
+            opcode: "createCloneOfWithTags",
+            blockType: Scratch.BlockType.COMMAND,
+            text: translate("create clone of [TARGET] with tags [TAGS]"),
+            hideFromPalette: true,
+            arguments: {
+              TARGET: {
+                type: Scratch.ArgumentType.STRING,
+                menu: "targets"
+              },
+              TAGS: {
+                type: Scratch.ArgumentType.ARRAY
+              }
+            }
+          },
+          {
+            opcode: "createCloneOfWithTagsThen",
+            blockType: Scratch.BlockType.COMMAND,
+            text: translate("create clone of [TARGET] with tags [TAGS] then"),
+            hideFromPalette: true,
+            branchCount: 1,
+            arguments: {
+              TARGET: {
+                type: Scratch.ArgumentType.STRING,
+                menu: "targets"
+              },
+              TAGS: {
+                type: Scratch.ArgumentType.ARRAY
+              }
+            }
+          },
+          {
+            opcode: "deleteClonesOfWithAnyTag",
+            blockType: Scratch.BlockType.COMMAND,
+            text: translate("delete clones of [TARGET] with any tag in [TAGS]"),
+            hideFromPalette: true,
+            arguments: {
+              TARGET: {
+                type: Scratch.ArgumentType.STRING,
+                menu: "targets"
+              },
+              TAGS: {
+                type: Scratch.ArgumentType.ARRAY
+              }
+            }
+          },
+          {
+            opcode: "cloneCountOfWithAnyTag",
+            blockType: Scratch.BlockType.REPORTER,
+            text: translate("number of [TYPE] of [TARGET] with any tag in [TAGS]"),
+            hideFromPalette: true,
+            arguments: {
+              TYPE: {
+                type: Scratch.ArgumentType.STRING,
+                menu: "types",
+                defaultValue: "clone"
+              },
+              TARGET: {
+                type: Scratch.ArgumentType.STRING,
+                menu: "targets"
+              },
+              TAGS: {
+                type: Scratch.ArgumentType.ARRAY
+              }
+            }
+          },
+          {
+            opcode: "clonesOfWithAnyTags",
+            blockType: Scratch.BlockType.ARRAY,
+            text: translate("[TYPE] of [TARGET] with any tag in [TAGS]"),
+            hideFromPalette: true,
+            arguments: {
+              TYPE: {
+                type: Scratch.ArgumentType.STRING,
+                menu: "types",
+                defaultValue: "clone"
+              },
+              TARGET: {
+                type: Scratch.ArgumentType.STRING,
+                menu: "targets"
+              },
+              TAGS: {
+                type: Scratch.ArgumentType.ARRAY
               }
             }
           },
@@ -299,6 +393,90 @@
       return Clone(sprite.tags);
     }
 
+    createCloneOfWithTags(args, util) {
+      const targetName = Cast.toString(args.TARGET);
+      const target = this._getTargetFromMenu(targetName, util);
+      if (!target || target.isStage) return;
+
+      const tags = this._parseTagArray(args.TAGS);
+      this._createCloneWithTags(target, tags);
+    }
+
+    createCloneOfWithTagsThen(args, util) {
+      const sourceTopBlockId = this._getBranchTopBlockId(util);
+      if (!sourceTopBlockId) return;
+
+      const sourceBlocks = util && util.target && util.target.blocks;
+      const targetName = Cast.toString(args.TARGET);
+      const target = this._getTargetFromMenu(targetName, util);
+      if (!sourceBlocks || !target || target.isStage) return;
+
+      const tags = this._parseTagArray(args.TAGS);
+      const newClone = this._createCloneWithTags(target, tags);
+      if (!newClone || !newClone.blocks) return;
+
+      const clonedTopBlockId = this._cloneSubstackOnTarget(sourceBlocks, sourceTopBlockId, newClone);
+      if (!clonedTopBlockId) return;
+
+      return this._runThreadOnTarget(clonedTopBlockId, newClone);
+    }
+
+    deleteClonesOfWithAnyTag(args, util) {
+      const targetName = Cast.toString(args.TARGET);
+      const target = this._getTargetFromMenu(targetName, util);
+      if (!target) return;
+
+      const tags = this._parseTagArray(args.TAGS);
+      if (tags.length === 0) return;
+
+      const candidates = this._filterTargetsByType(target, "clone");
+      for (const candidate of candidates) {
+        if (!candidate || candidate.isOriginal) continue;
+        this._ensureTags(candidate);
+        if (!tags.some(tag => candidate.tags.includes(tag))) continue;
+        this.runtime.disposeTarget(candidate);
+        this.runtime.stopForTarget(candidate);
+      }
+    }
+
+    cloneCountOfWithAnyTag(args, util) {
+      const targetName = Cast.toString(args.TARGET);
+      const target = this._getTargetFromMenu(targetName, util);
+      if (!target) return 0;
+
+      const tags = this._parseTagArray(args.TAGS);
+      if (tags.length === 0) return 0;
+
+      const candidates = this._filterTargetsByType(target, args.TYPE);
+      return candidates.filter(candidate => {
+        if (!candidate) return false;
+        this._ensureTags(candidate);
+        return tags.some(tag => candidate.tags.includes(tag));
+      }).length;
+    }
+
+    clonesOfWithAnyTags(args, util) {
+      const target = this._getTargetFromMenu(Cast.toString(args.TARGET), util);
+      if (!target) {
+        return [];
+      }
+
+      const tags = this._parseTagArray(args.TAGS);
+      if (tags.length === 0) {
+        return [];
+      }
+
+      return this._filterTargetsByType(target, args.TYPE)
+        .filter(candidate => {
+          if (!candidate || typeof candidate.toValue !== "function") {
+            return false;
+          }
+          this._ensureTags(candidate);
+          return tags.some(tag => candidate.tags.includes(tag));
+        })
+        .map(candidate => candidate.toValue());
+    }
+
     touchingTargetWithTag(args, util) {
       const targetName = Cast.toString(args.TARGET);
       const type = Cast.toString(args.TYPE);
@@ -389,6 +567,156 @@
         tags.push(tag);
       }
       return tags;
+    }
+
+    _filterTargetsByType(target, rawType) {
+      const type = Cast.toString(rawType || "clone").toLowerCase();
+      const spriteTargets = (target && target.sprite && Array.isArray(target.sprite.clones))
+        ? target.sprite.clones.filter(Boolean)
+        : [];
+
+      if (spriteTargets.length === 0) {
+        if (!target) {
+          return [];
+        }
+
+        if (type === "clone") {
+          return [];
+        }
+
+        return [target];
+      }
+
+      if (type === "parent") {
+        return spriteTargets.filter(candidate => candidate.isOriginal);
+      }
+
+      if (type === "anything") {
+        return spriteTargets;
+      }
+
+      return spriteTargets.filter(candidate => !candidate.isOriginal);
+    }
+
+    _createCloneWithTags(target, tags) {
+      const newClone = target.makeClone();
+      if (!newClone) return null;
+
+      this.runtime.addTarget(newClone);
+      newClone.goBehindOther(target);
+      newClone.tags = Clone(tags);
+      this._notifyTagsChanged(newClone);
+      return newClone;
+    }
+
+    _getBranchTopBlockId(util) {
+      const blockId = util && util.thread && util.thread.peekStack && util.thread.peekStack();
+      if (!blockId) return "";
+
+      const block = util && util.target && util.target.blocks && util.target.blocks.getBlock(blockId);
+      return (block && block.inputs && block.inputs.SUBSTACK && block.inputs.SUBSTACK.block) || "";
+    }
+
+    _createEphemeralBlockId(seed) {
+      return `usbSpriteTags_${seed}_${uid()}`;
+    }
+
+    _collectStackGraph(blockContainer, topBlockId) {
+      const discovered = [];
+      const visited = new Set();
+
+      const walk = blockId => {
+        if (!blockId || visited.has(blockId)) return;
+
+        const block = blockContainer.getBlock(blockId);
+        if (!block) return;
+
+        visited.add(blockId);
+        discovered.push(block);
+
+        if (block.next) walk(block.next);
+
+        const inputNames = Object.keys(block.inputs || {});
+        for (const inputName of inputNames) {
+          const inputData = block.inputs[inputName] || {};
+          if (inputData.block) walk(Cast.toString(inputData.block));
+          if (inputData.shadow) walk(Cast.toString(inputData.shadow));
+        }
+      };
+
+      walk(topBlockId);
+      return discovered;
+    }
+
+    _cloneSubstackOnTarget(sourceBlocks, topBlockId, target) {
+      const sourceGraph = this._collectStackGraph(sourceBlocks, topBlockId);
+      if (sourceGraph.length === 0) return "";
+
+      const validIds = new Set(sourceGraph.map(block => block.id));
+      const idMap = new Map();
+      for (const sourceBlock of sourceGraph) {
+        idMap.set(sourceBlock.id, this._createEphemeralBlockId(sourceBlock.id));
+      }
+
+      const remapId = blockId => {
+        if (!blockId || !validIds.has(blockId)) return null;
+        return idMap.get(blockId) || null;
+      };
+
+      for (const sourceBlock of sourceGraph) {
+        const clonedBlock = {
+          ...sourceBlock,
+          id: idMap.get(sourceBlock.id),
+          parent: remapId(sourceBlock.parent),
+          next: remapId(sourceBlock.next),
+          topLevel: sourceBlock.id === topBlockId,
+          x: sourceBlock.id === topBlockId ? sourceBlock.x : undefined,
+          y: sourceBlock.id === topBlockId ? sourceBlock.y : undefined,
+          inputs: {},
+          fields: sourceBlock.fields && typeof sourceBlock.fields === "object"
+            ? JSON.parse(JSON.stringify(sourceBlock.fields))
+            : {},
+          mutation: sourceBlock.mutation && typeof sourceBlock.mutation === "object"
+            ? JSON.parse(JSON.stringify(sourceBlock.mutation))
+            : null
+        };
+
+        const inputNames = Object.keys(sourceBlock.inputs || {});
+        for (const inputName of inputNames) {
+          const sourceInput = sourceBlock.inputs[inputName] || {};
+          const clonedInput = JSON.parse(JSON.stringify(sourceInput));
+          clonedInput.block = remapId(sourceInput.block);
+          clonedInput.shadow = remapId(sourceInput.shadow);
+          clonedBlock.inputs[inputName] = clonedInput;
+        }
+
+        target.blocks.createBlock(clonedBlock);
+      }
+
+      return idMap.get(topBlockId) || "";
+    }
+
+    _runThreadOnTarget(topBlockId, target) {
+      const thread = this.runtime._pushThread(topBlockId, target, {stackClick: false});
+
+      return new Promise(resolve => {
+        const cleanup = () => {
+          this.runtime.removeListener("AFTER_EXECUTE", handleAfterExecute);
+
+          if (target.blocks.getBlock(topBlockId)) {
+            target.blocks.deleteBlock(topBlockId);
+          }
+        };
+
+        const handleAfterExecute = () => {
+          if (!this.runtime.isActiveThread(thread)) {
+            cleanup();
+            resolve();
+          }
+        };
+
+        this.runtime.on("AFTER_EXECUTE", handleAfterExecute);
+      });
     }
 
     _ensureTags(target) {

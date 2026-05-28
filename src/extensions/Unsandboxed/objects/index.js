@@ -145,6 +145,20 @@
             }
           },
           {
+            opcode: "getPath",
+            blockType: Scratch.BlockType.REPORTER,
+            text: translate("path [PATH] in [OBJECT]"),
+            allowDropAnywhere: true,
+            arguments: {
+              PATH: {
+                type: Scratch.ArgumentType.ARRAY,
+              },
+              OBJECT: {
+                type: Scratch.ArgumentType.OBJECT
+              }
+            }
+          },
+          {
             opcode: "getKeysValues",
             blockType: Scratch.BlockType.ARRAY,
             text: translate("all [THING] in [OBJECT]"),
@@ -178,6 +192,23 @@
             },
           },
           {
+            opcode: "setPath",
+            blockType: Scratch.BlockType.OBJECT,
+            text: translate("set path [PATH] to [VALUE] in [OBJECT]"),
+            arguments: {
+              PATH: {
+                type: Scratch.ArgumentType.ARRAY,
+              },
+              VALUE: {
+                type: Scratch.ArgumentType.STRING,
+                defaultValue: translate("apple"),
+              },
+              OBJECT: {
+                type: Scratch.ArgumentType.OBJECT,
+              }
+            },
+          },
+          {
             opcode: "deleteKey",
             blockType: Scratch.BlockType.OBJECT,
             text: translate("delete [KEY] in [OBJECT]"),
@@ -185,6 +216,19 @@
               KEY: {
                 type: Scratch.ArgumentType.STRING,
                 defaultValue: translate("fruit"),
+              },
+              OBJECT: {
+                type: Scratch.ArgumentType.OBJECT,
+              }
+            },
+          },
+          {
+            opcode: "deletePath",
+            blockType: Scratch.BlockType.OBJECT,
+            text: translate("delete path [PATH] in [OBJECT]"),
+            arguments: {
+              PATH: {
+                type: Scratch.ArgumentType.ARRAY,
               },
               OBJECT: {
                 type: Scratch.ArgumentType.OBJECT,
@@ -238,6 +282,16 @@
                 type: Scratch.ArgumentType.PARAMETER,
                 defaultValue: translate("value")
               },
+              OBJECT: {
+                type: Scratch.ArgumentType.OBJECT,
+              }
+            }
+          },
+          {
+            opcode: "isValidObject",
+            blockType: Scratch.BlockType.BOOLEAN,
+            text: translate("is [OBJECT] valid?"),
+            arguments: {
               OBJECT: {
                 type: Scratch.ArgumentType.OBJECT,
               }
@@ -320,6 +374,27 @@
       return object[key] ?? "";
     }
 
+    getPath(args) {
+      const object = this.complexClone(Cast.toObject(args.OBJECT));
+      const path = this._toSafeArray(args.PATH);
+
+      let current = object;
+      for (const rawSegment of path) {
+        if (current === null || typeof current !== "object") {
+          return "";
+        }
+
+        const segment = this._normalizePathSegment(rawSegment, current);
+        if (!(segment in current)) {
+          return "";
+        }
+
+        current = current[segment];
+      }
+
+      return typeof current === "undefined" ? "" : current;
+    }
+
     getKeysValues(args) {
       const object = this.complexClone(Cast.toObject(args.OBJECT));
       const thing = Cast.toString(args.THING).toLowerCase();
@@ -340,11 +415,75 @@
       return object;
     }
 
+    setPath(args) {
+      const object = this.complexClone(Cast.toObject(args.OBJECT));
+      const path = this._toSafeArray(args.PATH);
+      const value = args.VALUE;
+
+      if (path.length === 0) {
+        return object;
+      }
+
+      let current = object;
+      for (let i = 0; i < path.length - 1; i++) {
+        const segment = this._normalizePathSegment(path[i], current);
+        const nextSegment = path[i + 1];
+        const existing = current[segment];
+
+        if (existing === null || typeof existing !== "object") {
+          const shouldCreateArray = this._isArrayPathSegment(nextSegment);
+          current[segment] = shouldCreateArray ? [] : {};
+        }
+
+        current = current[segment];
+      }
+
+      const lastSegment = this._normalizePathSegment(path[path.length - 1], current);
+      current[lastSegment] = value;
+      return object;
+    }
+
     deleteKey(args) {
       const object = this.complexClone(Cast.toObject(args.OBJECT));
       const key = Cast.sanitize(args.KEY);
 
       delete object[key];
+      return object;
+    }
+
+    deletePath(args) {
+      const object = this.complexClone(Cast.toObject(args.OBJECT));
+      const path = this._toSafeArray(args.PATH);
+
+      if (path.length === 0) {
+        return object;
+      }
+
+      let current = object;
+      for (let i = 0; i < path.length - 1; i++) {
+        if (current === null || typeof current !== "object") {
+          return object;
+        }
+
+        const segment = this._normalizePathSegment(path[i], current);
+        if (!(segment in current)) {
+          return object;
+        }
+
+        current = current[segment];
+      }
+
+      if (current === null || typeof current !== "object") {
+        return object;
+      }
+
+      const lastSegment = this._normalizePathSegment(path[path.length - 1], current);
+      if (Array.isArray(current) && Number.isInteger(lastSegment) && lastSegment >= 0) {
+        current.splice(lastSegment, 1);
+      } else {
+        delete current[lastSegment];
+      }
+
       return object;
     }
 
@@ -403,6 +542,29 @@
       } else {
         return util.stackFrame.result;
       }
+    }
+
+    isValidObject(args) {
+      const value = args.OBJECT;
+      return value !== null && typeof value === "object" && !Array.isArray(value);
+    }
+
+    _normalizePathSegment(segment, container) {
+      if (Array.isArray(container) && this._isArrayPathSegment(segment)) {
+        return Math.max(0, Math.floor(Cast.toNumber(segment)));
+      }
+      return Cast.sanitize(segment);
+    }
+
+    _isArrayPathSegment(segment) {
+      if (typeof segment === "number") {
+        return Number.isFinite(segment);
+      }
+      if (typeof segment !== "string") {
+        return false;
+      }
+      const trimmed = segment.trim();
+      return /^-?\d+$/.test(trimmed);
     }
 
     _consumeBranchReturn(util) {
