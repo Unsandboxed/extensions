@@ -109,7 +109,8 @@
                 type: Scratch.ArgumentType.ARRAY
               },
               SPRITE: {
-                type: Scratch.ArgumentType.OBJECT
+                type: Scratch.ArgumentType.STRING,
+                menu: "targets"
               }
             }
           },
@@ -123,7 +124,8 @@
                 type: Scratch.ArgumentType.ARRAY
               },
               SPRITE: {
-                type: Scratch.ArgumentType.OBJECT
+                type: Scratch.ArgumentType.STRING,
+                menu: "targets"
               }
             }
           },
@@ -134,7 +136,8 @@
             hideFromPalette: true,
             arguments: {
               SPRITE: {
-                type: Scratch.ArgumentType.OBJECT
+                type: Scratch.ArgumentType.STRING,
+                menu: "targets"
               }
             }
           },
@@ -323,8 +326,7 @@
     }
 
     setTagsOfSprite(args, util) {
-      const targetName = Cast.toString(args.TARGET);
-      const target = this._getTargetFromMenu(targetName, util);
+      const target = this._getTargetFromMenu(args.TARGET, util);
       if (!target) return;
 
       const array = Cast.toArray(args.ARRAY)
@@ -335,16 +337,15 @@
     }
 
     getTagsOfSprite(args, util) {
-      const targetName = Cast.toString(args.TARGET);
-      const target = this._getTargetFromMenu(targetName, util);
+      const target = this._getTargetFromMenu(args.TARGET, util);
 
       if (!target) return [];
         this._ensureTags(target);
         return Clone(target.tags);
     }
 
-    addTagsToTarget(args) {
-      const sprite = this._toSpriteTarget(this._spriteArg(args));
+    addTagsToTarget(args, util) {
+      const sprite = this._toSpriteTarget(this._spriteArg(args), util);
       if (!sprite) {
         return;
       }
@@ -366,8 +367,8 @@
       }
     }
 
-    removeTagsFromTarget(args) {
-      const sprite = this._toSpriteTarget(this._spriteArg(args));
+    removeTagsFromTarget(args, util) {
+      const sprite = this._toSpriteTarget(this._spriteArg(args), util);
       if (!sprite) {
         return;
       }
@@ -384,8 +385,8 @@
       }
     }
 
-    tagsOfTarget(args) {
-      const sprite = this._toSpriteTarget(this._spriteArg(args));
+    tagsOfTarget(args, util) {
+      const sprite = this._toSpriteTarget(this._spriteArg(args), util);
       if (!sprite) {
         return [];
       }
@@ -394,8 +395,7 @@
     }
 
     createCloneOfWithTags(args, util) {
-      const targetName = Cast.toString(args.TARGET);
-      const target = this._getTargetFromMenu(targetName, util);
+      const target = this._getTargetFromMenu(args.TARGET, util);
       if (!target || target.isStage) return;
 
       const tags = this._parseTagArray(args.TAGS);
@@ -407,8 +407,7 @@
       if (!sourceTopBlockId) return;
 
       const sourceBlocks = util && util.target && util.target.blocks;
-      const targetName = Cast.toString(args.TARGET);
-      const target = this._getTargetFromMenu(targetName, util);
+      const target = this._getTargetFromMenu(args.TARGET, util);
       if (!sourceBlocks || !target || target.isStage) return;
 
       const tags = this._parseTagArray(args.TAGS);
@@ -422,8 +421,7 @@
     }
 
     deleteClonesOfWithAnyTag(args, util) {
-      const targetName = Cast.toString(args.TARGET);
-      const target = this._getTargetFromMenu(targetName, util);
+      const target = this._getTargetFromMenu(args.TARGET, util);
       if (!target) return;
 
       const tags = this._parseTagArray(args.TAGS);
@@ -440,8 +438,7 @@
     }
 
     cloneCountOfWithAnyTag(args, util) {
-      const targetName = Cast.toString(args.TARGET);
-      const target = this._getTargetFromMenu(targetName, util);
+      const target = this._getTargetFromMenu(args.TARGET, util);
       if (!target) return 0;
 
       const tags = this._parseTagArray(args.TAGS);
@@ -456,7 +453,7 @@
     }
 
     clonesOfWithAnyTags(args, util) {
-      const target = this._getTargetFromMenu(Cast.toString(args.TARGET), util);
+      const target = this._getTargetFromMenu(args.TARGET, util);
       if (!target) {
         return [];
       }
@@ -478,10 +475,9 @@
     }
 
     touchingTargetWithTag(args, util) {
-      const targetName = Cast.toString(args.TARGET);
       const type = Cast.toString(args.TYPE);
       const tag = Cast.toString(args.TAG).trim();
-      const target = this._getTargetFromMenu(targetName, util);
+      const target = this._getTargetFromMenu(args.TARGET, util);
       if (!target || !this.vm.renderer) return false;
       if (!tag) return false;
 
@@ -506,7 +502,10 @@
     }
 
     _getTargets() {
-      const spriteNames = [{ text: translate("myself"), value: "_myself_" }];
+      const spriteNames = [
+        { text: translate("myself"), value: "_myself_" },
+        { text: translate("stage"), value: "_stage_" }
+      ];
       const targets = this.runtime.targets;
       for (const target of targets) {
         if (target.isOriginal && !target.isStage) {
@@ -521,7 +520,15 @@
     }
 
     _getTargetFromMenu(targetName, util) {
-      let target = this.runtime.getSpriteTargetByName(targetName);
+      if (targetName && typeof targetName === "object") {
+        const targetFromValue = this._toSpriteTarget(targetName, util);
+        if (targetFromValue) {
+          this._ensureTags(targetFromValue);
+          return targetFromValue;
+        }
+      }
+
+      let target = this.runtime.getSpriteTargetByName(Cast.toString(targetName));
       if (targetName === "_myself_") target = util.target;
       if (targetName === "_stage_") target = this.runtime.getTargetForStage();
       this._ensureTags(target);
@@ -540,20 +547,32 @@
       if (
         this.runtime &&
         typeof this.runtime.getCustomTypeIdForValue === "function" &&
-        this.runtime.getCustomTypeIdForValue(inputSprite) === "target"
+        (this.runtime.getCustomTypeIdForValue(inputSprite) === "sprite" ||
+          this.runtime.getCustomTypeIdForValue(inputSprite) === "target")
       ) {
-        return Cast.toString(inputSprite.spriteId || "");
+        return Cast.toString(inputSprite.spriteId || inputSprite.id || "");
       }
 
-      return Cast.toString(inputSprite.spriteId || "");
+      return Cast.toString(inputSprite.spriteId || inputSprite.id || "");
     }
 
-    _toSpriteTarget(inputSprite) {
+    _toSpriteTarget(inputSprite, util) {
+      if (util && typeof util.resolveTarget === "function") {
+        const resolved = util.resolveTarget(inputSprite);
+        if (resolved) {
+          return resolved;
+        }
+      }
+
       const spriteId = this._spriteIdFromAny(inputSprite);
       if (!spriteId) {
+        if (typeof inputSprite === "string") {
+          return this.runtime.getSpriteTargetByName(inputSprite) || null;
+        }
         return null;
       }
-      return this.runtime.getTargetById(spriteId) || null;
+
+      return this.runtime.getTargetById(spriteId) || this.runtime.getSpriteTargetByName(spriteId) || null;
     }
 
     _parseTagArray(rawValue) {

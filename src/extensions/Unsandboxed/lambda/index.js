@@ -71,7 +71,8 @@
                 type: Scratch.ArgumentType.OBJECT
               },
               SPRITE: {
-                type: Scratch.ArgumentType.OBJECT
+                  type: Scratch.ArgumentType.STRING,
+                  menu: "targets"
               }
             }
           },
@@ -86,7 +87,13 @@
               }
             }
           }
-        ]
+        ],
+        menus: {
+          targets: {
+            acceptReporters: true,
+            items: "_getTargets"
+          }
+        }
       };
     }
 
@@ -131,7 +138,7 @@
         return;
       }
 
-      const target = this._toSpriteTarget(args.SPRITE);
+      const target = this._toSpriteTarget(args.SPRITE, util);
       if (!target) {
         return;
       }
@@ -592,12 +599,29 @@
       });
     }
 
-    _toSpriteTarget(inputSprite) {
+    _toSpriteTarget(inputSprite, util) {
+      if (util && typeof util.resolveTarget === "function") {
+        const resolved = util.resolveTarget(inputSprite);
+        if (resolved) {
+          return resolved;
+        }
+      }
+
+      if (typeof inputSprite === "string") {
+        if (inputSprite === "_myself_") {
+          return util && util.target ? util.target : null;
+        }
+        if (inputSprite === "_stage_") {
+          return this.runtime.getTargetForStage ? this.runtime.getTargetForStage() : null;
+        }
+        return this.runtime.getSpriteTargetByName(inputSprite) || null;
+      }
+
       if (!inputSprite || typeof inputSprite !== "object") {
         return null;
       }
 
-      const spriteId = Cast.toString(inputSprite.spriteId || "");
+      const spriteId = Cast.toString(inputSprite.spriteId || inputSprite.id || "");
       if (spriteId) {
         const targetById = this.runtime.getTargetById(spriteId);
         if (targetById) {
@@ -606,6 +630,21 @@
       }
 
       return null;
+    }
+    _getTargets() {
+      const spriteNames = [
+        {text: translate("myself"), value: "_myself_"},
+        {text: translate("stage"), value: "_stage_"}
+      ];
+
+      for (const target of this.runtime.targets) {
+        if (target.isOriginal && !target.isStage) {
+          const targetName = target.getName();
+          spriteNames.push({text: targetName, value: targetName});
+        }
+      }
+
+      return spriteNames;
     }
 
     _sanitizeIdentifier(name) {

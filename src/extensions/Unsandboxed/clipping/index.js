@@ -144,7 +144,14 @@
      * @param {*} value
      * @returns {?VM.RenderedTarget}
      */
-    _resolveSpriteTarget(currentTarget, value) {
+    _resolveSpriteTarget(currentTarget, value, util) {
+      if (util && typeof util.resolveTarget === "function") {
+        const resolved = util.resolveTarget(value);
+        if (resolved) {
+          return resolved;
+        }
+      }
+
       const name = Cast.toString(value);
       if (name === "_myself_") {
         return currentTarget || null;
@@ -532,7 +539,7 @@
 
     useSpriteMask(args, util) {
       this._destroyGeneratedMaskSkin(util.target);
-      const sourceTarget = this._resolveSpriteTarget(util.target, args.SPRITE);
+      const sourceTarget = this._resolveSpriteTarget(util.target, args.SPRITE, util);
       if (!sourceTarget || sourceTarget.isStage) {
         util.target[CLIP_MASK_SOURCE_SPRITE] = null;
         util.target[CLIP_MASK_COSTUME] = null;
@@ -595,7 +602,7 @@
         const sourceSprite = util.target[CLIP_MASK_SOURCE_SPRITE];
         if (!sourceSprite) return "";
 
-        const sourceTarget = this._resolveSpriteTarget(util.target, sourceSprite);
+        const sourceTarget = this._resolveSpriteTarget(util.target, sourceSprite, util);
         if (!sourceTarget || typeof sourceTarget.toValue !== "function") return "";
         return sourceTarget.toValue();
       }

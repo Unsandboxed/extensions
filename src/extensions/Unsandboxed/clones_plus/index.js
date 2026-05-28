@@ -86,8 +86,6 @@
             }
           },
           "---",
-
-          // Creation and execution
           {
             opcode: "createCloneOfThen",
             blockType: Scratch.BlockType.COMMAND,
@@ -107,21 +105,20 @@
             branchCount: 1,
             arguments: {
               SPRITE: {
-                type: Scratch.ArgumentType.OBJECT
+                type: Scratch.ArgumentType.STRING,
+                menu: "targets"
               }
             }
           },
           "---",
-
-          // Target references
           {
             opcode: "thisTarget",
-            blockType: Scratch.BlockType.OBJECT,
+            blockType: Scratch.BlockType.REPORTER,
             text: translate("this sprite")
           },
           {
             opcode: "targetFromMenu",
-            blockType: Scratch.BlockType.OBJECT,
+            blockType: Scratch.BlockType.REPORTER,
             text: translate("sprite target [TARGET]"),
             arguments: {
               TARGET: {
@@ -131,15 +128,14 @@
             }
           },
           "---",
-
-          // Target status and properties
           {
             opcode: "targetExists",
             blockType: Scratch.BlockType.BOOLEAN,
             text: translate("sprite [SPRITE] exists?"),
             arguments: {
               SPRITE: {
-                type: Scratch.ArgumentType.OBJECT
+                type: Scratch.ArgumentType.STRING,
+                menu: "targets"
               }
             }
           },
@@ -149,7 +145,8 @@
             text: translate("[SPRITE] is [TYPE]?"),
             arguments: {
               SPRITE: {
-                type: Scratch.ArgumentType.OBJECT
+                type: Scratch.ArgumentType.STRING,
+                menu: "targets"
               },
               TYPE: {
                 type: Scratch.ArgumentType.STRING,
@@ -158,24 +155,7 @@
               }
             }
           },
-          {
-            opcode: "targetProperty",
-            blockType: Scratch.BlockType.REPORTER,
-            text: translate("[PROPERTY] of [SPRITE]"),
-            arguments: {
-              PROPERTY: {
-                type: Scratch.ArgumentType.STRING,
-                menu: "targetProperties",
-                defaultValue: "x position"
-              },
-              SPRITE: {
-                type: Scratch.ArgumentType.OBJECT
-              }
-            }
-          },
           "---",
-
-          // Collections and counts
           {
             opcode: "clonesOf",
             blockType: Scratch.BlockType.ARRAY,
@@ -221,8 +201,6 @@
             }
           },
           "---",
-
-          // Spatial queries
           {
             opcode: "clonesOfTouchingMe",
             blockType: Scratch.BlockType.ARRAY,
@@ -272,8 +250,6 @@
             }
           },
           "---",
-
-          // Destructive actions
           {
             opcode: "deleteClonesOf",
             blockType: Scratch.BlockType.COMMAND,
@@ -291,7 +267,8 @@
             text: translate("delete clone [SPRITE]"),
             arguments: {
               SPRITE: {
-                type: Scratch.ArgumentType.OBJECT
+                type: Scratch.ArgumentType.STRING,
+                menu: "targets"
               }
             }
           },
@@ -301,11 +278,11 @@
             text: translate("stop scripts in sprite [SPRITE]"),
             arguments: {
               SPRITE: {
-                type: Scratch.ArgumentType.OBJECT
+                type: Scratch.ArgumentType.STRING,
+                menu: "targets"
               }
             }
-          },
-          "---"
+          }
         ],
         menus: {
           typesPlural: {
@@ -367,19 +344,6 @@
               }
             ]
           },
-          targetProperties: {
-            acceptReporters: false,
-            items: [
-              "x position",
-              "y position",
-              "position",
-              "direction",
-              "costume #",
-              "costume name",
-              "size",
-              "volume"
-            ]
-          }
         }
       };
     }
@@ -396,8 +360,7 @@
     }
 
     cloneCountOf(args, util) {
-      const targetName = Cast.toString(args.TARGET);
-      const target = this._getTargetFromMenu(targetName, util);
+      const target = this._getTargetFromMenu(args.TARGET, util);
       if (!target) return 0;
       return this._filterTargetsByType(target, args.TYPE).length;
     }
@@ -407,8 +370,7 @@
       if (!sourceTopBlockId) return;
 
       const sourceBlocks = util?.target?.blocks;
-      const targetName = Cast.toString(args.TARGET);
-      const target = this._getTargetFromMenu(targetName, util);
+      const target = this._getTargetFromMenu(args.TARGET, util);
       if (!sourceBlocks || !target || target.isStage) return;
 
       const newClone = this._createCloneWithTags(target, []);
@@ -425,7 +387,7 @@
       if (!sourceTopBlockId) return;
 
       const sourceBlocks = util?.target?.blocks;
-      const target = this._toSpriteTarget(this._spriteArg(args));
+      const target = this._toSpriteTarget(this._spriteArg(args), util);
       if (!sourceBlocks || !target || !target.blocks) return;
 
       const clonedTopBlockId = this._cloneSubstackOnTarget(sourceBlocks, sourceTopBlockId, target);
@@ -435,8 +397,7 @@
     }
 
     deleteClonesOf(args, util) {
-      const targetName = Cast.toString(args.TARGET);
-      const target = this._getTargetFromMenu(targetName, util);
+      const target = this._getTargetFromMenu(args.TARGET, util);
       if (!target) return;
 
       const candidates = this._filterTargetsByType(target, "clone");
@@ -452,12 +413,12 @@
     }
 
     targetFromMenu(args, util) {
-      const target = this._getTargetFromMenu(Cast.toString(args.TARGET), util);
+      const target = this._getTargetFromMenu(args.TARGET, util);
       return target && typeof target.toValue === "function" ? target.toValue() : null;
     }
 
     clonesOf(args, util) {
-      const target = this._getTargetFromMenu(Cast.toString(args.TARGET), util);
+      const target = this._getTargetFromMenu(args.TARGET, util);
       if (!target) {
         return [];
       }
@@ -473,7 +434,7 @@
         return [];
       }
 
-      const target = this._getTargetFromMenu(Cast.toString(args.TARGET), util);
+      const target = this._getTargetFromMenu(args.TARGET, util);
       if (!target) {
         return [];
       }
@@ -483,13 +444,13 @@
         .map(candidate => candidate.toValue());
     }
 
-    targetExists(args) {
-      return this._toSpriteTarget(this._spriteArg(args)) !== null;
+    targetExists(args, util) {
+      return this._toSpriteTarget(this._spriteArg(args), util) !== null;
     }
 
-    targetIsType(args) {
+    targetIsType(args, util) {
       const type = Cast.toString(args.TYPE || "clone").toLowerCase();
-      const sprite = this._toSpriteTarget(this._spriteArg(args));
+      const sprite = this._toSpriteTarget(this._spriteArg(args), util);
       if (!sprite) {
         return type === "deleted";
       }
@@ -515,7 +476,7 @@
         return false;
       }
 
-      const target = this._getTargetFromMenu(Cast.toString(args.TARGET), util);
+      const target = this._getTargetFromMenu(args.TARGET, util);
       if (!target) {
         return false;
       }
@@ -530,7 +491,7 @@
         return 10000;
       }
 
-      const target = this._getTargetFromMenu(Cast.toString(args.TARGET), util);
+      const target = this._getTargetFromMenu(args.TARGET, util);
       if (!target) {
         return 10000;
       }
@@ -564,53 +525,8 @@
       return allTargets.length;
     }
 
-    targetProperty(args) {
-      const sprite = this._toSpriteTarget(this._spriteArg(args));
-      if (!sprite) {
-        return 0;
-      }
-
-      const property = Cast.toString(args.PROPERTY);
-      if (sprite.isStage) {
-        switch (property) {
-        case "backdrop #":
-          return sprite.currentCostume + 1;
-        case "backdrop name":
-          return sprite.getCostumes()[sprite.currentCostume].name;
-        case "volume":
-          return sprite.volume;
-        }
-      } else {
-        switch (property) {
-        case "position":
-          return this.runtime.createBuiltInCustomTypeValue("position", [sprite.x, sprite.y]);
-        case "x position":
-          return sprite.x;
-        case "y position":
-          return sprite.y;
-        case "direction":
-          return sprite.direction;
-        case "costume #":
-          return sprite.currentCostume + 1;
-        case "costume name":
-          return sprite.getCostumes()[sprite.currentCostume].name;
-        case "size":
-          return sprite.size;
-        case "volume":
-          return sprite.volume;
-        }
-      }
-
-      const variable = sprite.lookupVariableByNameAndType(property, "", true);
-      if (variable) {
-        return variable.value;
-      }
-
-      return 0;
-    }
-
-    deleteTarget(args) {
-      const sprite = this._toSpriteTarget(this._spriteArg(args));
+    deleteTarget(args, util) {
+      const sprite = this._toSpriteTarget(this._spriteArg(args), util);
       if (!sprite || sprite.isOriginal) {
         return;
       }
@@ -618,8 +534,8 @@
       this.runtime.stopForTarget(sprite);
     }
 
-    stopScriptsInTarget(args) {
-      const sprite = this._toSpriteTarget(this._spriteArg(args));
+    stopScriptsInTarget(args, util) {
+      const sprite = this._toSpriteTarget(this._spriteArg(args), util);
       if (!sprite) {
         return;
       }
@@ -646,7 +562,13 @@
       return spriteNames;
     }
 
-    _getTargetFromMenu(targetName, util) {
+    _getTargetFromMenu(targetValue, util) {
+      if (targetValue && typeof targetValue === "object") {
+        const spriteTarget = this._toSpriteTarget(targetValue, util);
+        if (spriteTarget) return spriteTarget;
+      }
+
+      const targetName = Cast.toString(targetValue);
       let target = this.runtime.getSpriteTargetByName(targetName);
       if (targetName === "_myself_") target = util && util.target;
       if (targetName === "_stage_") target = this.runtime.getTargetForStage();
@@ -690,20 +612,32 @@
       if (
         this.runtime &&
         typeof this.runtime.getCustomTypeIdForValue === "function" &&
-        this.runtime.getCustomTypeIdForValue(inputSprite) === "target"
+        (this.runtime.getCustomTypeIdForValue(inputSprite) === "sprite" ||
+          this.runtime.getCustomTypeIdForValue(inputSprite) === "target")
       ) {
         return Cast.toString(inputSprite.spriteId || "");
       }
 
-      return Cast.toString(inputSprite.spriteId || "");
+      return Cast.toString(inputSprite.spriteId || inputSprite.id || "");
     }
 
-    _toSpriteTarget(inputSprite) {
+    _toSpriteTarget(inputSprite, util) {
+      if (util && typeof util.resolveTarget === "function") {
+        const resolved = util.resolveTarget(inputSprite);
+        if (resolved) {
+          return resolved;
+        }
+      }
+
       const spriteId = this._spriteIdFromAny(inputSprite);
       if (!spriteId) {
+        if (typeof inputSprite === "string") {
+          return this.runtime.getSpriteTargetByName(inputSprite) || null;
+        }
         return null;
       }
-      return this.runtime.getTargetById(spriteId) || null;
+
+      return this.runtime.getTargetById(spriteId) || this.runtime.getSpriteTargetByName(spriteId) || null;
     }
 
     _isTouchingTarget(currentTarget, candidate) {
