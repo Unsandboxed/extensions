@@ -324,75 +324,78 @@
             filter: [Scratch.TargetType.SPRITE],
             disableMonitor: true
           },
-          "---",
-          {
-            opcode: "setBehindEffect",
-            blockType: Scratch.BlockType.COMMAND,
-            text: translate("set behind [EFFECT] effect to [VALUE]"),
-            arguments: {
-              EFFECT: {
-                type: Scratch.ArgumentType.STRING,
-                menu: "effectType",
-                defaultValue: UnsandboxedBlendingEffectsBlocks.defaultEffect
-              },
-              VALUE: {
-                type: Scratch.ArgumentType.NUMBER,
-                defaultValue: 25
-              }
-            },
-            filter: [Scratch.TargetType.SPRITE]
-          },
-          {
-            opcode: "changeBehindEffect",
-            blockType: Scratch.BlockType.COMMAND,
-            text: translate("change behind [EFFECT] effect by [VALUE]"),
-            arguments: {
-              EFFECT: {
-                type: Scratch.ArgumentType.STRING,
-                menu: "effectType",
-                defaultValue: UnsandboxedBlendingEffectsBlocks.defaultEffect
-              },
-              VALUE: {
-                type: Scratch.ArgumentType.NUMBER,
-                defaultValue: 10
-              }
-            },
-            filter: [Scratch.TargetType.SPRITE]
-          },
-          {
-            opcode: "clearEffects",
-            blockType: Scratch.BlockType.COMMAND,
-            text: translate("clear behind effects"),
-            filter: [Scratch.TargetType.SPRITE]
-          },
-          {
-            opcode: "setBehindRenderMode",
-            blockType: Scratch.BlockType.COMMAND,
-            text: translate("render behind effects as [MODE]"),
-            arguments: {
-              MODE: {
-                type: Scratch.ArgumentType.STRING,
-                menu: "behindRenderMode",
-                defaultValue: UnsandboxedBlendingEffectsBlocks.effectRenderModeUnderlay
-              }
-            },
-            filter: [Scratch.TargetType.SPRITE]
-          },
-          "---",
-          {
-            opcode: "getEffectValue",
-            blockType: Scratch.BlockType.REPORTER,
-            text: translate("behind [EFFECT] effect"),
-            arguments: {
-              EFFECT: {
-                type: Scratch.ArgumentType.STRING,
-                menu: "effectType",
-                defaultValue: UnsandboxedBlendingEffectsBlocks.defaultEffect
-              }
-            },
-            filter: [Scratch.TargetType.SPRITE],
-            disableMonitor: true
-          }
+          // TODO: these are just not ready yet. the renderer *can* support behind effects,
+          // but the implementation sucks. Once I actually figure that out, maybe people will
+          // be allowed to use these. Until then, theyre just sad reminders of what could be :(
+          // "---",
+          // {
+          //   opcode: "setBehindEffect",
+          //   blockType: Scratch.BlockType.COMMAND,
+          //   text: translate("set behind [EFFECT] effect to [VALUE]"),
+          //   arguments: {
+          //     EFFECT: {
+          //       type: Scratch.ArgumentType.STRING,
+          //       menu: "effectType",
+          //       defaultValue: UnsandboxedBlendingEffectsBlocks.defaultEffect
+          //     },
+          //     VALUE: {
+          //       type: Scratch.ArgumentType.NUMBER,
+          //       defaultValue: 25
+          //     }
+          //   },
+          //   filter: [Scratch.TargetType.SPRITE]
+          // },
+          // {
+          //   opcode: "changeBehindEffect",
+          //   blockType: Scratch.BlockType.COMMAND,
+          //   text: translate("change behind [EFFECT] effect by [VALUE]"),
+          //   arguments: {
+          //     EFFECT: {
+          //       type: Scratch.ArgumentType.STRING,
+          //       menu: "effectType",
+          //       defaultValue: UnsandboxedBlendingEffectsBlocks.defaultEffect
+          //     },
+          //     VALUE: {
+          //       type: Scratch.ArgumentType.NUMBER,
+          //       defaultValue: 10
+          //     }
+          //   },
+          //   filter: [Scratch.TargetType.SPRITE]
+          // },
+          // {
+          //   opcode: "clearEffects",
+          //   blockType: Scratch.BlockType.COMMAND,
+          //   text: translate("clear behind effects"),
+          //   filter: [Scratch.TargetType.SPRITE]
+          // },
+          // {
+          //   opcode: "setBehindRenderMode",
+          //   blockType: Scratch.BlockType.COMMAND,
+          //   text: translate("render behind effects as [MODE]"),
+          //   arguments: {
+          //     MODE: {
+          //       type: Scratch.ArgumentType.STRING,
+          //       menu: "behindRenderMode",
+          //       defaultValue: UnsandboxedBlendingEffectsBlocks.effectRenderModeUnderlay
+          //     }
+          //   },
+          //   filter: [Scratch.TargetType.SPRITE]
+          // },
+          // "---",
+          // {
+          //   opcode: "getEffectValue",
+          //   blockType: Scratch.BlockType.REPORTER,
+          //   text: translate("behind [EFFECT] effect"),
+          //   arguments: {
+          //     EFFECT: {
+          //       type: Scratch.ArgumentType.STRING,
+          //       menu: "effectType",
+          //       defaultValue: UnsandboxedBlendingEffectsBlocks.defaultEffect
+          //     }
+          //   },
+          //   filter: [Scratch.TargetType.SPRITE],
+          //   disableMonitor: true
+          // }
         ],
         menus: {
           blendMode: {
