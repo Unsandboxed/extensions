@@ -40,9 +40,6 @@
       this.runtime.on("PROJECT_LOADED", () => {
         this.runtime.targets.forEach(target => this._implementMaskForTarget(target));
       });
-      this.runtime.on("AFTER_EXECUTE", () => {
-        this._syncSpriteMasks();
-      });
       this.runtime.on("RUNTIME_DISPOSED", () => {
         for (const target of this.runtime.targets) {
           this._destroyGeneratedMaskSkin(target);
@@ -66,11 +63,6 @@
           "<shadow type=\"looks_costume\"><field name=\"COSTUME\"></field></shadow>"
         );
         Blockly.SecretTransformations.addDefaultShadow(
-          "usbClipMask_useCostumeMaskAt",
-          "COSTUME",
-          "<shadow type=\"looks_costume\"><field name=\"COSTUME\"></field></shadow>"
-        );
-        Blockly.SecretTransformations.addDefaultShadow(
           "usbClipMask_useURLMask",
           "URL",
           "<shadow type=\"text\"><field name=\"TEXT\">https://extensions.turbowarp.org/dango.png</field></shadow>"
@@ -90,6 +82,40 @@
     _getTargetCostumes(target) {
       if (!target || typeof target.getCostumes !== "function") return [];
       return target.getCostumes();
+    }
+
+    /**
+     * Build a built-in costume custom type value from a target costume.
+     * @param {VM.RenderedTarget} target
+     * @param {number} costumeIndex
+     * @returns {*}
+     */
+    _createCostumeValue(target, costumeIndex) {
+      const runtime = this.runtime;
+      if (!runtime || typeof runtime.createBuiltInCustomTypeValue !== "function") {
+        return "";
+      }
+
+      const costumes = this._getTargetCostumes(target);
+      const costume = costumes[costumeIndex];
+      if (!costume) {
+        return "";
+      }
+
+      const image = typeof costume.dataURI === "string" ? costume.dataURI : (
+        costume.asset && typeof costume.asset.encodeDataURI === "function" ? costume.asset.encodeDataURI() : ""
+      );
+      const size = Array.isArray(costume.size) ? costume.size : [0, 0];
+
+      return runtime.createBuiltInCustomTypeValue("costume", {
+        targetId: typeof target?.id === "string" ? target.id : "",
+        costumeIndex,
+        costumeName: typeof costume.name === "string" ? costume.name : "",
+        assetId: typeof costume.assetId === "string" ? costume.assetId : "",
+        image: typeof image === "string" ? image : "",
+        width: Number(size[0]) || 0,
+        height: Number(size[1]) || 0
+      });
     }
 
     /**
@@ -159,6 +185,7 @@
       const lowerIndex = costumes.findIndex(c => c.name.toLowerCase() === lower);
       return lowerIndex === -1 ? null : lowerIndex;
     }
+
 
     /**
      * Decode a data URI into mime metadata and raw bytes.
@@ -243,7 +270,7 @@
 
       if (originalTarget) {
         target[CLIP_MASK_COSTUME] = originalTarget[CLIP_MASK_COSTUME];
-        target[CLIP_MASK_SKIN_ID] = null;
+        target[CLIP_MASK_SKIN_ID] = originalTarget[CLIP_MASK_SKIN_ID];
         target[CLIP_MASK_X] = originalTarget[CLIP_MASK_X];
         target[CLIP_MASK_Y] = originalTarget[CLIP_MASK_Y];
         target[CLIP_MASK_USE_SPRITE] = originalTarget[CLIP_MASK_USE_SPRITE];
@@ -260,18 +287,6 @@
     }
 
     /**
-     * Keep sprite-driven masks synced with source sprite movement/costume changes.
-     */
-    _syncSpriteMasks() {
-      for (const target of this.runtime.targets) {
-        if (!target || target.isStage) continue;
-        if (!(CLIP_MASK_SOURCE_SPRITE in target)) continue;
-        if (!target[CLIP_MASK_SOURCE_SPRITE]) continue;
-        this._applyMaskToTarget(target);
-      }
-    }
-
-    /**
      * Push current clip-mask state from target metadata to renderer uniforms.
      * @param {VM.RenderedTarget} target
      */
@@ -282,16 +297,13 @@
       if (sourceSpriteName) {
         const sourceTarget = this._resolveSpriteTarget(target, sourceSpriteName);
         if (!sourceTarget || sourceTarget.isStage) {
+          target.renderer.updateDrawableClipMaskSourceDrawableId(target.drawableID, null);
           target.renderer.updateDrawableClipMaskSkinId(target.drawableID, null);
           target.renderer.updateDrawableClipMaskPosition(target.drawableID, null);
         } else {
-          const sourceCostumes = this._getTargetCostumes(sourceTarget);
-          const sourceCostumeIndex = typeof sourceTarget.currentCostume === "number" ? sourceTarget.currentCostume : null;
-          const sourceCostume = sourceCostumeIndex === null ? null : sourceCostumes[sourceCostumeIndex];
-          const sourceSkinId = sourceCostume && typeof sourceCostume.skinId === "number" ? sourceCostume.skinId : null;
-
-          target.renderer.updateDrawableClipMaskSkinId(target.drawableID, sourceSkinId);
-          target.renderer.updateDrawableClipMaskPosition(target.drawableID, [sourceTarget.x, sourceTarget.y]);
+          target.renderer.updateDrawableClipMaskSourceDrawableId(target.drawableID, sourceTarget.drawableID);
+          target.renderer.updateDrawableClipMaskSkinId(target.drawableID, null);
+          target.renderer.updateDrawableClipMaskPosition(target.drawableID, null);
         }
 
         if (target.visible) {
@@ -303,6 +315,7 @@
       }
 
       const directSkinId = target[CLIP_MASK_SKIN_ID];
+      target.renderer.updateDrawableClipMaskSourceDrawableId(target.drawableID, null);
       if (typeof directSkinId === "number") {
         target.renderer.updateDrawableClipMaskSkinId(target.drawableID, directSkinId);
         target.renderer.updateDrawableClipMaskPosition(
@@ -395,6 +408,19 @@
         color3: "#774DCB",
         blocks: [
           {
+            opcode: "useSpriteMask",
+            blockType: Scratch.BlockType.COMMAND,
+            text: translate("use [SPRITE] as clipping mask"),
+            arguments: {
+              SPRITE: {
+                type: Scratch.ArgumentType.STRING,
+                menu: "maskSprite"
+              }
+            },
+            filter: [Scratch.TargetType.SPRITE]
+          },
+          "---",
+          {
             opcode: "useCostumeMask",
             blockType: Scratch.BlockType.COMMAND,
             text: translate("use [COSTUME] as clipping mask"),
@@ -406,14 +432,14 @@
             filter: [Scratch.TargetType.SPRITE]
           },
           {
-            opcode: "useSpriteMask",
+            opcode: "useURLMask",
             blockType: Scratch.BlockType.COMMAND,
-            text: translate("use [SPRITE] as clipping mask"),
+            text: translate("load image from URL [URL] as clipping mask"),
             hideFromPalette: true,
             arguments: {
-              SPRITE: {
+              URL: {
                 type: Scratch.ArgumentType.STRING,
-                menu: "maskSprite"
+                defaultValue: "https://extensions.turbowarp.org/dango.png"
               }
             },
             filter: [Scratch.TargetType.SPRITE]
@@ -434,26 +460,13 @@
             },
             filter: [Scratch.TargetType.SPRITE]
           },
+          "---",
           {
             opcode: "clearMask",
             blockType: Scratch.BlockType.COMMAND,
             text: translate("clear clipping mask"),
             filter: [Scratch.TargetType.SPRITE]
           },
-          {
-            opcode: "useURLMask",
-            blockType: Scratch.BlockType.COMMAND,
-            text: translate("load image from URL [URL] as clipping mask"),
-            hideFromPalette: true,
-            arguments: {
-              URL: {
-                type: Scratch.ArgumentType.STRING,
-                defaultValue: "https://extensions.turbowarp.org/dango.png"
-              }
-            },
-            filter: [Scratch.TargetType.SPRITE]
-          },
-          "---",
           {
             opcode: "getMaskCostume",
             blockType: Scratch.BlockType.REPORTER,
@@ -490,6 +503,18 @@
               {
                 text: translate("y"),
                 value: "y"
+              },
+              {
+                text: translate("mode"),
+                value: "mode"
+              },
+              {
+                text: translate("sprite"),
+                value: "sprite"
+              },
+              {
+                text: translate("costume"),
+                value: "costume"
               }
             ]
           }
@@ -524,8 +549,12 @@
     setMaskPosition(args, util) {
       util.target[CLIP_MASK_X] = Cast.toNumber(args.X);
       util.target[CLIP_MASK_Y] = Cast.toNumber(args.Y);
-      util.target[CLIP_MASK_USE_SPRITE] = false;
-      util.target[CLIP_MASK_SOURCE_SPRITE] = null;
+
+      // Do not clear an active sprite mask source by accident.
+      if (!util.target[CLIP_MASK_SOURCE_SPRITE]) {
+        util.target[CLIP_MASK_USE_SPRITE] = false;
+      }
+
       this._applyMaskToTarget(util.target);
     }
 
@@ -555,6 +584,37 @@
     }
 
     getMaskProperty(args, util) {
+      if (args.PROP === "mode") {
+        if (util.target[CLIP_MASK_SOURCE_SPRITE]) return "sprite";
+        if (typeof util.target[CLIP_MASK_COSTUME] === "number") return "costume";
+        if (typeof util.target[CLIP_MASK_SKIN_ID] === "number") return "url";
+        return "none";
+      }
+
+      if (args.PROP === "sprite") {
+        const sourceSprite = util.target[CLIP_MASK_SOURCE_SPRITE];
+        if (!sourceSprite) return "";
+
+        const sourceTarget = this._resolveSpriteTarget(util.target, sourceSprite);
+        if (!sourceTarget || typeof sourceTarget.toValue !== "function") return "";
+        return sourceTarget.toValue();
+      }
+
+      if (args.PROP === "costume") {
+        const sourceSpriteName = util.target[CLIP_MASK_SOURCE_SPRITE];
+        if (sourceSpriteName) {
+          const sourceTarget = this._resolveSpriteTarget(util.target, sourceSpriteName);
+          if (!sourceTarget || sourceTarget.isStage) return "";
+          return this._createCostumeValue(sourceTarget, Number(sourceTarget.currentCostume) || 0);
+        }
+
+        const costumeIndex = util.target[CLIP_MASK_COSTUME];
+        if (typeof costumeIndex === "number") {
+          return this._createCostumeValue(util.target, costumeIndex);
+        }
+        return "";
+      }
+
       if (util.target[CLIP_MASK_USE_SPRITE]) {
         if (args.PROP === "x") return util.target.x;
         if (args.PROP === "y") return util.target.y;
