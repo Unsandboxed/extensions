@@ -11,6 +11,7 @@
 
   const TRANSFORM_STRETCH = "stretch";
   const TRANSFORM_SKEW = "skew";
+  const STRETCH_BLOCK_PREFIX = "stretch_";
 
   class UnsandboxedStretchBlocks {
     /**
@@ -38,6 +39,87 @@
       );
       this.runtime.on("PROJECT_LOADED", () => {
         this.runtime.targets.forEach(target => this._implementTarget(target));
+      });
+
+      this._installFlyoutTransformSync();
+    }
+
+    /**
+     * Keep TRANSFORM dropdown choices in the flyout in sync for this extension.
+     * Changing one flyout block's TRANSFORM updates all stretch extension flyout blocks.
+     */
+    _installFlyoutTransformSync() {
+      if (!Scratch.gui || typeof Scratch.gui.getBlockly !== "function") return;
+
+      const workspaceListenerFlag = "__stretchTransformSyncListener";
+      const ensureListenerFlag = "__stretchTransformEnsureListener";
+      const self = this;
+
+      Scratch.gui.getBlockly().then(Blockly => {
+        if (!Blockly || !Blockly.Events) return;
+
+        const syncWorkspaceTransformFields = (workspace, sourceBlockId, value) => {
+          const normalized = self._normalizeTransform(value);
+          const blocks = workspace.getAllBlocks(false);
+
+          const wasEnabled = Blockly.Events.isEnabled();
+          Blockly.Events.disable();
+          try {
+            for (const block of blocks) {
+              if (!block || block.id === sourceBlockId) continue;
+              if (typeof block.type !== "string" || !block.type.startsWith(STRETCH_BLOCK_PREFIX)) {
+                continue;
+              }
+
+              const transformField = block.getField("TRANSFORM");
+              if (transformField && transformField.getValue() !== normalized) {
+                transformField.setValue(normalized);
+              }
+            }
+          } finally {
+            if (wasEnabled) {
+              Blockly.Events.enable();
+            }
+          }
+        };
+
+        const attachTransformListener = workspace => {
+          if (!workspace || workspace[workspaceListenerFlag]) return;
+
+          workspace.addChangeListener(event => {
+            if (!event || event.type !== Blockly.Events.BLOCK_CHANGE) return;
+            if (event.element !== "field" || event.name !== "TRANSFORM") return;
+
+            const block = workspace.getBlockById(event.blockId);
+            if (!block || typeof block.type !== "string") return;
+            if (!block.type.startsWith(STRETCH_BLOCK_PREFIX)) return;
+
+            syncWorkspaceTransformFields(workspace, event.blockId, event.newValue);
+          });
+
+          workspace[workspaceListenerFlag] = true;
+        };
+
+        const ensureFlyoutListener = () => {
+          const mainWorkspace = Blockly.getMainWorkspace && Blockly.getMainWorkspace();
+          if (!mainWorkspace || typeof mainWorkspace.getFlyout !== "function") return;
+
+          const flyout = mainWorkspace.getFlyout();
+          if (!flyout || typeof flyout.getWorkspace !== "function") return;
+
+          const flyoutWorkspace = flyout.getWorkspace();
+          attachTransformListener(flyoutWorkspace);
+        };
+
+        const mainWorkspace = Blockly.getMainWorkspace && Blockly.getMainWorkspace();
+        if (mainWorkspace && !mainWorkspace[ensureListenerFlag]) {
+          mainWorkspace.addChangeListener(() => {
+            ensureFlyoutListener();
+          });
+          mainWorkspace[ensureListenerFlag] = true;
+        }
+
+        ensureFlyoutListener();
       });
     }
 
