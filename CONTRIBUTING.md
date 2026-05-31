@@ -24,5 +24,6 @@ Extension categories that are not allowed:
   - Clones Plus v2 is the only exception because it isn't a category and the name is solely for recognition.
 
 When submitting an extension, we may rewrite it to follow strict formatting and semantic standards.
+These aren't strict guidelines. Some extensions may follow these rules, some won't. We tend to feel it out as we go.
 
 _Last updated: 31/05/2026_
