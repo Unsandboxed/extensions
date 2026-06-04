@@ -4,8 +4,6 @@ This repo contains the extensions used by Unsandboxed.
 
 If you are new here, start with the quick setup below.
 
-We are now accepting pull requests and extension submissions.
-
 ## Quick Setup
 
 1. Install packages:
@@ -104,6 +102,10 @@ Why this matters:
 - Extension not loading:
 	- confirm `manifest.id` matches what you expect
 	- confirm your folder has `index.js`
+
+## Status
+
+Currently not accepting or reviewing new third-party extensions.
 
 ## License
 

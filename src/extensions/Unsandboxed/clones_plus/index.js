@@ -5,6 +5,8 @@
   const Clone = Scratch.UnsandboxedMod.Clone.structured;
   const uid = Scratch.UnsandboxedMod.helpers.uid;
   const translate = Scratch.translate;
+  const DEFER_CLONE_START_HATS_FLAG = "__usbClonesPlusDeferCloneStartHats";
+  const DEFER_VANILLA_CLONE_START_FLAG = "__usbClonesPlusDeferVanillaCloneStart";
 
   class UnsandboxedClonesPlusBlocks {
     static extensionId = "usbClonesPlus";
@@ -18,28 +20,11 @@
           return;
         }
 
-        var cloneValue = newTarget.toValue ? newTarget.toValue() : null;
-        this.runtime.startHats(
-          `${UnsandboxedClonesPlusBlocks.extensionId}_whenCloneStarts`,
-          {},
-          newTarget,
-          {clone: cloneValue}
-        );
-
-        var parentTarget =
-          newTarget.sprite && Array.isArray(newTarget.sprite.clones)
-            ? (newTarget.sprite.clones[0] || null)
-            : null;
-        if (!parentTarget) {
+        if (newTarget[DEFER_CLONE_START_HATS_FLAG]) {
           return;
         }
 
-        this.runtime.startHats(
-          `${UnsandboxedClonesPlusBlocks.extensionId}_whenCloneOfSpriteStarts`,
-          {TARGET: parentTarget.getName()},
-          parentTarget,
-          {clone: cloneValue}
-        );
+        this._fireCloneStartHats(newTarget);
       });
     }
 
@@ -373,13 +358,20 @@
       const target = this._getTargetFromMenu(args.TARGET, util);
       if (!sourceBlocks || !target || target.isStage) return;
 
-      const newClone = this._createCloneWithTags(target, []);
+      const newClone = this._createCloneWithTags(target, [], {
+        deferCloneStartHats: true,
+        deferVanillaCloneStart: true
+      });
       if (!newClone || !newClone.blocks) return;
 
       const clonedTopBlockId = this._cloneSubstackOnTarget(sourceBlocks, sourceTopBlockId, newClone);
       if (!clonedTopBlockId) return;
 
-      return this._runThreadOnTarget(clonedTopBlockId, newClone);
+      return this._runThreadOnTarget(clonedTopBlockId, newClone, () => {
+        this._fireDeferredVanillaCloneStart(newClone);
+        delete newClone[DEFER_CLONE_START_HATS_FLAG];
+        this._fireCloneStartHats(newClone);
+      });
     }
 
     runInTarget(args, util) {
@@ -671,15 +663,80 @@
       return Math.sqrt((dx * dx) + (dy * dy));
     }
 
-    _createCloneWithTags(target, tags) {
-      const newClone = target.makeClone();
+    _createCloneWithTags(target, tags, options = {}) {
+      const newClone = options.deferVanillaCloneStart
+        ? this._makeCloneWithVanillaStartDeferred(target)
+        : target.makeClone();
       if (!newClone) return null;
+
+      if (options.deferCloneStartHats) {
+        newClone[DEFER_CLONE_START_HATS_FLAG] = true;
+      }
 
       this.runtime.addTarget(newClone);
       newClone.goBehindOther(target);
       newClone.tags = Clone(tags);
       this._notifyTagsChanged(newClone);
       return newClone;
+    }
+
+    _makeCloneWithVanillaStartDeferred(target) {
+      const newClone = target.makeClone({deferCloneStartHats: true});
+      if (newClone) {
+        newClone[DEFER_VANILLA_CLONE_START_FLAG] = true;
+      }
+      return newClone;
+    }
+
+    _fireDeferredVanillaCloneStart(target) {
+      if (!target || !target[DEFER_VANILLA_CLONE_START_FLAG]) {
+        return;
+      }
+
+      delete target[DEFER_VANILLA_CLONE_START_FLAG];
+      if (typeof target.startAsClone === "function") {
+        target.startAsClone();
+        return;
+      }
+
+      this.runtime.startHats("control_start_as_clone", null, target);
+    }
+
+    _fireCloneStartHats(newTarget) {
+      if (!newTarget || newTarget.isOriginal) {
+        return;
+      }
+
+      var cloneValue = newTarget.toValue ? newTarget.toValue() : null;
+      const cloneStartThreads = this.runtime.startHats(
+        `${UnsandboxedClonesPlusBlocks.extensionId}_whenCloneStarts`,
+        {},
+        newTarget,
+        {clone: cloneValue}
+      ) || [];
+
+      for (const thread of cloneStartThreads) {
+        this._drainThreadForCurrentFrame(thread);
+      }
+
+      var parentTarget =
+        newTarget.sprite && Array.isArray(newTarget.sprite.clones)
+          ? (newTarget.sprite.clones[0] || null)
+          : null;
+      if (!parentTarget) {
+        return;
+      }
+
+      const cloneOfSpriteThreads = this.runtime.startHats(
+        `${UnsandboxedClonesPlusBlocks.extensionId}_whenCloneOfSpriteStarts`,
+        {TARGET: parentTarget.getName()},
+        parentTarget,
+        {clone: cloneValue}
+      ) || [];
+
+      for (const thread of cloneOfSpriteThreads) {
+        this._drainThreadForCurrentFrame(thread);
+      }
     }
 
     _getBranchTopBlockId(util) {
@@ -769,7 +826,7 @@
       return idMap.get(topBlockId) || "";
     }
 
-    _runThreadOnTarget(topBlockId, target) {
+    _runThreadOnTarget(topBlockId, target, onComplete) {
       const thread = this.runtime._pushThread(topBlockId, target, {stackClick: false});
 
       return new Promise(resolve => {
@@ -783,13 +840,57 @@
 
         const handleAfterExecute = () => {
           if (!this.runtime.isActiveThread(thread)) {
+            if (typeof onComplete === "function") {
+              onComplete();
+            }
             cleanup();
             resolve();
           }
         };
 
         this.runtime.on("AFTER_EXECUTE", handleAfterExecute);
+
+        // Run as much of the spawned subthread as possible in this frame.
+        // If it completes now, we'll resolve immediately and fire clone-start hats
+        // in the same frame. If it blocks/yields, AFTER_EXECUTE will finish later.
+        this._drainThreadForCurrentFrame(thread);
+
+        if (!this.runtime.isActiveThread(thread)) {
+          if (typeof onComplete === "function") {
+            onComplete();
+          }
+          cleanup();
+          resolve();
+        }
       });
+    }
+
+    _drainThreadForCurrentFrame(thread) {
+      const sequencer = this.runtime && this.runtime.sequencer;
+      if (!thread || !sequencer || typeof sequencer.stepThread !== "function") {
+        return;
+      }
+
+      let safety = 0;
+      while (this.runtime.isActiveThread(thread) && safety < 256) {
+        const ThreadClass = thread && thread.constructor;
+        const STATUS_YIELD_TICK = ThreadClass && typeof ThreadClass.STATUS_YIELD_TICK === "number"
+          ? ThreadClass.STATUS_YIELD_TICK
+          : 3;
+        const STATUS_RUNNING = ThreadClass && typeof ThreadClass.STATUS_RUNNING === "number"
+          ? ThreadClass.STATUS_RUNNING
+          : 0;
+
+        // Resume single-tick yields immediately for this forced in-frame drain.
+        if (thread.status === STATUS_YIELD_TICK) {
+          thread.setStatus(STATUS_RUNNING);
+        } else if (this.runtime.isWaitingThread(thread)) {
+          break;
+        }
+
+        sequencer.stepThread(thread);
+        safety++;
+      }
     }
 
     _notifyTagsChanged(target) {

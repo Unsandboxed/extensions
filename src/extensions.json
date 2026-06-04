@@ -12,6 +12,7 @@
   "usbRuntime": "Unsandboxed/runtime",
   "stretch": "Unsandboxed/stretch",
   "usbTemporaryData": "Unsandboxed/temporary_data",
+  "usbTryCatch": "Unsandboxed/try_catch",
   "usbTypes": "Unsandboxed/types",
   "usbVectors": "Unsandboxed/vectors"
 }

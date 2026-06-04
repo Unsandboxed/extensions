@@ -1,0 +1,7 @@
+{
+  "id": "usbTryCatch",
+  "name": "Try/Catch",
+  "description": "Adds try/catch style control flow and throw blocks for unsandboxed projects.",
+  "createdBy": [],
+  "insetIconColor": "#ff6680"
+}

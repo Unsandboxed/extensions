@@ -26,6 +26,7 @@
     "express": "^4.22.2",
     "file-loader": "^6.2.0",
     "string-replace-loader": "^3.3.0",
+    "unsandboxed-experiments": "file:../experiments",
     "url-loader": "^4.1.1",
     "watch": "^0.13.0"
   },
