@@ -14,5 +14,6 @@
   "usbTemporaryData": "Unsandboxed/temporary_data",
   "usbTryCatch": "Unsandboxed/try_catch",
   "usbTypes": "Unsandboxed/types",
-  "usbVectors": "Unsandboxed/vectors"
+  "usbVectors": "Unsandboxed/vectors",
+  "usbViewport": "Unsandboxed/viewport"
 }

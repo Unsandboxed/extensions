@@ -1,0 +1,7 @@
+{
+  "id": "usbViewport",
+  "name": "Viewport",
+  "description": "Display the stage viewport on a sprite silhouette.",
+  "createdBy": [],
+  "insetIconColor": "#2e8a7d"
+}
