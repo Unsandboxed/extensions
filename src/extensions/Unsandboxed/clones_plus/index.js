@@ -176,12 +176,24 @@
           {
             opcode: "projectTargetCount",
             blockType: Scratch.BlockType.REPORTER,
-            text: translate("number of [TYPE] in project"),
+            text: translate("number of [TYPE]"),
             arguments: {
               TYPE: {
                 type: Scratch.ArgumentType.STRING,
                 menu: "typesPlural",
                 defaultValue: "clone"
+              }
+            }
+          },
+          {
+            opcode: "projectTargets",
+            blockType: Scratch.BlockType.ARRAY,
+            text: translate("all [TYPE]"),
+            arguments: {
+              TYPE: {
+                type: Scratch.ArgumentType.STRING,
+                menu: "typesPlural",
+                defaultValue: "anything"
               }
             }
           },
@@ -506,15 +518,13 @@
     }
 
     projectTargetCount(args) {
-      const type = Cast.toString(args.TYPE || "clone").toLowerCase();
-      const allTargets = this.runtime.targets.filter(target => target && !target.isStage);
-      if (type === "parent") {
-        return allTargets.filter(target => target.isOriginal).length;
-      }
-      if (type === "clone") {
-        return allTargets.filter(target => !target.isOriginal).length;
-      }
-      return allTargets.length;
+      return this._projectTargetsByType(args.TYPE).length;
+    }
+
+    projectTargets(args) {
+      return this._projectTargetsByType(args.TYPE)
+        .filter(target => target && typeof target.toValue === "function")
+        .map(target => target.toValue());
     }
 
     deleteTarget(args, util) {
@@ -661,6 +671,26 @@
       var dx = a.x - b.x;
       var dy = a.y - b.y;
       return Math.sqrt((dx * dx) + (dy * dy));
+    }
+
+    _projectTargetsByType(rawType) {
+      const type = Cast.toString(rawType || "clone").toLowerCase();
+      const allTargets = Array.isArray(this.runtime.targets)
+        ? this.runtime.targets.filter(target => target)
+        : [];
+
+      if (type === "stage") {
+        return allTargets.filter(target => target.isStage);
+      }
+
+      const nonStageTargets = allTargets.filter(target => !target.isStage);
+      if (type === "parent" || type === "sprite") {
+        return nonStageTargets.filter(target => target.isOriginal);
+      }
+      if (type === "clone") {
+        return nonStageTargets.filter(target => !target.isOriginal);
+      }
+      return nonStageTargets;
     }
 
     _createCloneWithTags(target, tags, options = {}) {

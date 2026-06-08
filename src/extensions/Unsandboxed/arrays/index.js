@@ -199,6 +199,24 @@
             },
           },
           {
+            opcode: "itemsFromTo",
+            blockType: Scratch.BlockType.ARRAY,
+            text: translate("items ([START]) to ([END]) of [ARRAY]"),
+            arguments: {
+              START: {
+                type: Scratch.ArgumentType.NUMBER,
+                defaultValue: 1,
+              },
+              END: {
+                type: Scratch.ArgumentType.NUMBER,
+                defaultValue: 3,
+              },
+              ARRAY: {
+                type: Scratch.ArgumentType.ARRAY
+              },
+            },
+          },
+          {
             opcode: "itemNumber",
             blockType: Scratch.BlockType.REPORTER,
             text: translate("item # of [ITEM] in [ARRAY]"),
@@ -374,6 +392,25 @@
       const index = this._getIndex(args.INDEX, array.length);
 
       return array[index] ?? "";
+    }
+
+    itemsFromTo(args) {
+      const array = this.complexClone(this._toSafeArray(args.ARRAY)) ?? [];
+
+      let start = Math.floor(Cast.toNumber(args.START));
+      let end = Math.floor(Cast.toNumber(args.END));
+
+      if (!Number.isFinite(start)) start = 1;
+      if (!Number.isFinite(end)) end = array.length;
+
+      const startIndex = Math.max(1, start) - 1;
+      const endIndex = Math.max(1, end) - 1;
+
+      if (endIndex < startIndex) {
+        return [];
+      }
+
+      return array.slice(startIndex, endIndex + 1);
     }
 
     itemNumber(args) {
