@@ -150,8 +150,10 @@ class UnsandboxedColorsEffects {
       fragmentColor: [
         "{",
         `    vec4 color = gl_FragColor;`,
-        `    float amount = clamp(u_${effectName}, 0.0, 100.0) / 100.0;`,
-        `    color.${channelSwizzle} = clamp(color.${channelSwizzle} + amount, 0.0, 1.0);`,
+        `    if (u_${effectName} > 0.0) {`,
+        `        float channel = clamp((u_${effectName} - 1.0) / 255.0, 0.0, 1.0);`,
+        `        color.${channelSwizzle} = channel;`,
+        "    }",
         "    gl_FragColor = color;",
         "}"
       ].join("\n")
@@ -174,7 +176,7 @@ class UnsandboxedColorsEffects {
       ].join("\n"),
       fragmentColor: [
         "{",
-        `    float outlineOpacity = clamp(u_${this.extensionClass.outlineOpacityEffect}, 0.0, 1.0);`,
+        `    float outlineOpacity = clamp(u_${this.extensionClass.outlineOpacityEffect}, 0.0, 100.0) / 100.0;`,
         `    float outlineWidth = max(u_${this.extensionClass.outlineWidthEffect}, 0.0);`,
         "    if (outlineOpacity > epsilon && outlineWidth > epsilon) {",
         "        vec2 texel = vec2(1.0) / max(u_skinSize, vec2(1.0));",
@@ -192,7 +194,7 @@ class UnsandboxedColorsEffects {
         "            }",
         "        }",
         "        if (minDistance <= outlineWidth) {",
-        `            vec3 outlineColor = vec3(clamp(u_${this.extensionClass.outlineColorEffects.red}, 0.0, 1.0), clamp(u_${this.extensionClass.outlineColorEffects.green}, 0.0, 1.0), clamp(u_${this.extensionClass.outlineColorEffects.blue}, 0.0, 1.0));`,
+        `            vec3 outlineColor = vec3(clamp((u_${this.extensionClass.outlineColorEffects.red} - 1.0) / 255.0, 0.0, 1.0), clamp((u_${this.extensionClass.outlineColorEffects.green} - 1.0) / 255.0, 0.0, 1.0), clamp((u_${this.extensionClass.outlineColorEffects.blue} - 1.0) / 255.0, 0.0, 1.0));`,
         "            float inner = max(outlineWidth - 1.0, 0.0);",
         "            float edgeFactor = 1.0 - smoothstep(inner, outlineWidth + epsilon, minDistance);",
         "            float outlineAlpha = clamp(edgeFactor * outlineOpacity, 0.0, 1.0);",
@@ -246,7 +248,7 @@ class UnsandboxedColorsEffects {
         fragmentColor: [
           "{",
           `    vec4 color = gl_FragColor;`,
-          `    float amount = clamp(u_${effectName}, 0.0, 100.0) / 100.0;`,
+          `    float amount = clamp(u_${effectName}, -100.0, 100.0) / 100.0;`,
           `    color.${channelSwizzle} = clamp(color.${channelSwizzle} + amount, 0.0, 1.0);`,
           "    gl_FragColor = color;",
           "}"
