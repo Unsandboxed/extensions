@@ -194,6 +194,18 @@
       }
     }
 
+    _ensureOutlineVisible(target) {
+      if (!target || !target.effects || typeof target.setEffect !== "function") return;
+
+      this._ensureOutlineColor(target);
+      this._ensureOutlineWidth(target);
+
+      const opacityEffect = UnsandboxedColorsBlocks.outlineOpacityEffect;
+      if (!Cast.toNumber(target.effects[opacityEffect])) {
+        target.setEffect(opacityEffect, 100);
+      }
+    }
+
     _parseColorInput(value) {
       const raw = Cast.toString(value).trim();
 
@@ -466,6 +478,7 @@
 
       const color = this._parseColorInput(args.COLOR);
       this._setOutlineColor(target, color);
+      this._ensureOutlineVisible(target);
     }
 
     setOutlineOpacity(args, util) {
