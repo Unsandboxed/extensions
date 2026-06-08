@@ -9,7 +9,6 @@
    */
   class UnsandboxedViewportBlocks {
     /**
-     * The extension identifier for this block package.
      * @type {string}
      */
     static extensionId = "usbViewport";
@@ -59,10 +58,6 @@
      * Create the Viewport extension instance.
      */
     constructor() {
-      if (!Scratch.extensions.unsandboxed) {
-        throw new Error("Viewport must be run unsandboxed");
-      }
-
       /** @type {VirtualMachine} */
       this.vm = Scratch.vm;
       /** @type {Runtime} */

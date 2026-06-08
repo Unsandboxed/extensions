@@ -1,0 +1,7 @@
+{
+  "id": "usbErrors",
+  "name": "Errors",
+  "description": "Structured error handling blocks for raising and handling runtime errors.",
+  "createdBy": [],
+  "insetIconColor": "#ffab19"
+}

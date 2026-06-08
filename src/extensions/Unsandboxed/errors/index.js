@@ -8,27 +8,27 @@
   const IterationExtension = require("../iteration");
 
   /**
-   * Unsandboxed blocks for try/catch style script control flow.
+   * Unsandboxed blocks for structured script error flow.
    * @constructor
    */
-  class UnsandboxedTryCatchBlocks {
+  class UnsandboxedErrorsBlocks {
     /**
      * The extension identifier of this block package.
      * @type {string}
      */
-    static extensionId = "usbTryCatch";
+    static extensionId = "usbErrors";
 
     /**
      * Per-thread key for the most recently thrown error string.
      * @type {string}
      */
-    static threadErrorKey = "__usbTryCatchError";
+    static threadErrorKey = "__usbErrorsLastError";
 
     /**
      * Per-thread key for nested try branch depth tracking.
      * @type {string}
      */
-    static threadTryDepthKey = "__usbTryCatchTryDepth";
+    static threadErrorScopeDepthKey = "__usbErrorsScopeDepth";
 
     /**
      * Define extension metadata and block descriptors.
@@ -36,16 +36,16 @@
      */
     getInfo() {
       return {
-        id: UnsandboxedTryCatchBlocks.extensionId,
-        name: translate("Try/Catch"),
+        id: UnsandboxedErrorsBlocks.extensionId,
+        name: translate("Errors"),
         color1: "#FFAB19",
         color2: "#EC9C13",
         color3: "#CF8B17",
         blocks: [
           {
-            opcode: "tryCatch",
+            opcode: "attemptHandle",
             blockType: Scratch.BlockType.CONDITIONAL,
-            text: [translate("try"), translate("catch [ERROR]")],
+            text: [translate("attempt"), translate("on error [ERROR]")],
             branchCount: 2,
             arguments: {
               ERROR: {
@@ -55,9 +55,9 @@
             }
           },
           {
-            opcode: "throwError",
+            opcode: "raise",
             blockType: Scratch.BlockType.COMMAND,
-            text: translate("throw [TYPE] [ERROR]"),
+            text: translate("raise [TYPE] [ERROR]"),
             isDynamic: true,
             isTerminal: true,
             dynamicTerminalField: "TYPE",
@@ -97,7 +97,7 @@
       if (!thread) {
         return "";
       }
-      const value = thread[UnsandboxedTryCatchBlocks.threadErrorKey];
+      const value = thread[UnsandboxedErrorsBlocks.threadErrorKey];
       return typeof value === "string" ? value : "";
     }
 
@@ -105,14 +105,14 @@
       if (!thread) {
         return;
       }
-      thread[UnsandboxedTryCatchBlocks.threadErrorKey] = Cast.toString(value);
+      thread[UnsandboxedErrorsBlocks.threadErrorKey] = Cast.toString(value);
     }
 
     _clearThreadError(thread) {
       if (!thread) {
         return;
       }
-      delete thread[UnsandboxedTryCatchBlocks.threadErrorKey];
+      delete thread[UnsandboxedErrorsBlocks.threadErrorKey];
     }
 
     /**
@@ -124,24 +124,24 @@
       if (!thread) {
         return 0;
       }
-      const value = thread[UnsandboxedTryCatchBlocks.threadTryDepthKey];
+      const value = thread[UnsandboxedErrorsBlocks.threadErrorScopeDepthKey];
       return Number.isFinite(value) && value > 0 ? value : 0;
     }
 
     /**
-     * Enter a try branch context for the thread.
+    * Enter an error scope context for the thread.
      * @param {object} thread Runtime thread.
      */
     _enterTryBranch(thread) {
       if (!thread) {
         return;
       }
-      thread[UnsandboxedTryCatchBlocks.threadTryDepthKey] =
+      thread[UnsandboxedErrorsBlocks.threadErrorScopeDepthKey] =
         this._getTryDepth(thread) + 1;
     }
 
     /**
-     * Exit a try branch context for the thread.
+    * Exit an error scope context for the thread.
      * @param {object} thread Runtime thread.
      */
     _exitTryBranch(thread) {
@@ -150,9 +150,9 @@
       }
       const nextDepth = this._getTryDepth(thread) - 1;
       if (nextDepth > 0) {
-        thread[UnsandboxedTryCatchBlocks.threadTryDepthKey] = nextDepth;
+        thread[UnsandboxedErrorsBlocks.threadErrorScopeDepthKey] = nextDepth;
       } else {
-        delete thread[UnsandboxedTryCatchBlocks.threadTryDepthKey];
+        delete thread[UnsandboxedErrorsBlocks.threadErrorScopeDepthKey];
       }
     }
 
@@ -188,28 +188,28 @@
     }
 
     /**
-     * Execute try/catch control flow.
+    * Execute error handling control flow.
      * @param {object} args Block arguments.
      * @param {object} util Block utility.
      */
-    tryCatch(args, util) {
+      attemptHandle(args, util) {
       if (!util || !util.thread || !util.stackFrame) {
         return;
       }
 
-      if (!util.stackFrame.usbTryCatchPhase) {
+      if (!util.stackFrame.usbErrorsPhase) {
         this._clearThreadError(util.thread);
-        util.stackFrame.usbTryCatchPhase = "try";
+        util.stackFrame.usbErrorsPhase = "attempt";
         this._enterTryBranch(util.thread);
         util.startBranch(1, true);
         return;
       }
 
-      if (util.stackFrame.usbTryCatchPhase === "try") {
+      if (util.stackFrame.usbErrorsPhase === "attempt") {
         this._exitTryBranch(util.thread);
         const errorMessage = this._getThreadError(util.thread);
         if (errorMessage) {
-          util.stackFrame.usbTryCatchPhase = "catch";
+          util.stackFrame.usbErrorsPhase = "handle";
           util.thread.initParams();
           const errorTarget = this._resolveParameterTarget(
             util,
@@ -223,33 +223,33 @@
 
         this._clearThreadError(util.thread);
         util.stackFrame.weakScriptTop = false;
-        util.stackFrame.usbTryCatchPhase = "done";
+        util.stackFrame.usbErrorsPhase = "done";
         return;
       }
 
-      if (util.stackFrame.usbTryCatchPhase === "catch") {
+      if (util.stackFrame.usbErrorsPhase === "handle") {
         this._clearThreadError(util.thread);
         util.stackFrame.weakScriptTop = false;
-        util.stackFrame.usbTryCatchPhase = "done";
+        util.stackFrame.usbErrorsPhase = "done";
         return;
       }
     }
 
     /**
-     * Check whether throw execution is currently inside a try branch.
+     * Check whether raise execution is currently inside an error scope.
      * @param {object} util Block utility.
-     * @returns {boolean} True when current thread is inside a try branch.
+     * @returns {boolean} True when current thread is inside an error scope.
      */
-    _isInsideTryCatch(util) {
+    _isInsideErrorScope(util) {
       return this._getTryDepth(util && util.thread) > 0;
     }
 
     /**
-     * Throw an error for try/catch handling or GUI reporting.
+    * Raise an error for in-script handling or GUI reporting.
      * @param {object} args Block arguments.
      * @param {object} util Block utility.
      */
-    throwError(args, util) {
+      raise(args, util) {
       if (!util || !util.thread) {
         return;
       }
@@ -282,15 +282,15 @@
         return;
       }
 
-      const isInsideTryCatch = this._isInsideTryCatch(util);
+      const isInsideErrorScope = this._isInsideErrorScope(util);
       this._setThreadError(util.thread, errorMessage);
 
-      // Only trigger compatibility-layer branch unwinding when a try branch can catch it.
-      if (isInsideTryCatch && util.stackFrame) {
+      // Only trigger branch unwinding when an active error scope can handle it.
+      if (isInsideErrorScope && util.stackFrame) {
         util.stackFrame.weakScriptTop = true;
       }
 
-      if (!isInsideTryCatch) {
+      if (!isInsideErrorScope) {
         const spriteName =
           util.target && typeof util.target.getName === "function"
             ? util.target.getName()
@@ -320,5 +320,5 @@
     }
   }
 
-  Scratch.extensions.register(new UnsandboxedTryCatchBlocks());
+  Scratch.extensions.register(new UnsandboxedErrorsBlocks());
 })(Scratch);

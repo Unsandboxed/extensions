@@ -4,7 +4,9 @@
   "usbClipMask": "Unsandboxed/clipping",
   "usbClonesPlus": "Unsandboxed/clones_plus",
   "usbSpriteTags": "Unsandboxed/collision_tags",
+  "usbColorsAndEffects": "Unsandboxed/colors_and_effects",
   "usbComments": "Unsandboxed/comments",
+  "usbErrors": "Unsandboxed/errors",
   "usbIteration": "Unsandboxed/iteration",
   "usbLambda": "Unsandboxed/lambda",
   "usbMouse": "Unsandboxed/mouse",
@@ -12,7 +14,6 @@
   "usbRuntime": "Unsandboxed/runtime",
   "stretch": "Unsandboxed/stretch",
   "usbTemporaryData": "Unsandboxed/temporary_data",
-  "usbTryCatch": "Unsandboxed/try_catch",
   "usbTypes": "Unsandboxed/types",
   "usbVectors": "Unsandboxed/vectors",
   "usbViewport": "Unsandboxed/viewport"
