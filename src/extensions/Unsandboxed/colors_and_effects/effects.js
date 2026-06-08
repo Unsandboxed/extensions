@@ -43,6 +43,12 @@ class UnsandboxedColorsEffects {
 
   static outlineWidthEffect = "outlinewidth";
 
+  static colorChannelSwizzles = {
+    red: "r",
+    green: "g",
+    blue: "b"
+  };
+
   static shaderFxEffects = {
     chromatic: {
       menuName: "chromatic",
@@ -132,6 +138,7 @@ class UnsandboxedColorsEffects {
   }
 
   _makeSolidChannelEffectInfo(effectName, channelKey) {
+    const channelSwizzle = this.extensionClass.colorChannelSwizzles[channelKey] || "r";
     return {
       menuName: effectName,
       showInMenu: false,
@@ -144,7 +151,7 @@ class UnsandboxedColorsEffects {
         "{",
         `    vec4 color = gl_FragColor;`,
         `    float amount = clamp(u_${effectName}, 0.0, 100.0) / 100.0;`,
-        `    color.${channelKey} = clamp(color.${channelKey} + amount, 0.0, 1.0);`,
+        `    color.${channelSwizzle} = clamp(color.${channelSwizzle} + amount, 0.0, 1.0);`,
         "    gl_FragColor = color;",
         "}"
       ].join("\n")
@@ -158,6 +165,7 @@ class UnsandboxedColorsEffects {
       converter: value => this.Cast.toNumber(value),
       shapeChanges: false,
       fragmentUniforms: [
+        `uniform float u_${this.extensionClass.outlineOpacityEffect};`,
         `uniform float u_${this.extensionClass.outlineWidthEffect};`,
         `uniform float u_${this.extensionClass.outlineColorEffects.red};`,
         `uniform float u_${this.extensionClass.outlineColorEffects.green};`,
@@ -226,6 +234,7 @@ class UnsandboxedColorsEffects {
     };
 
     for (const [channelName, effectName] of Object.entries(this.extensionClass.channelEffects)) {
+      const channelSwizzle = this.extensionClass.colorChannelSwizzles[channelName] || "r";
       register(effectName, this._makeEffectInfo(effectName, {
         menuName: effectName,
         showInMenu: false,
@@ -238,7 +247,7 @@ class UnsandboxedColorsEffects {
           "{",
           `    vec4 color = gl_FragColor;`,
           `    float amount = clamp(u_${effectName}, 0.0, 100.0) / 100.0;`,
-          `    color.${channelName} = clamp(color.${channelName} + amount, 0.0, 1.0);`,
+          `    color.${channelSwizzle} = clamp(color.${channelSwizzle} + amount, 0.0, 1.0);`,
           "    gl_FragColor = color;",
           "}"
         ].join("\n")
