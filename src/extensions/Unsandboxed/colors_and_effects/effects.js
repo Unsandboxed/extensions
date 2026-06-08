@@ -152,7 +152,10 @@ class UnsandboxedColorsEffects {
         `    vec4 color = gl_FragColor;`,
         `    if (u_${effectName} > 0.0) {`,
         `        float channel = clamp((u_${effectName} - 1.0) / 255.0, 0.0, 1.0);`,
-        `        color.${channelSwizzle} = channel;`,
+        "        float alpha = clamp(color.a, 0.0, 1.0);",
+        "        vec3 straight = alpha > epsilon ? (color.rgb / alpha) : vec3(0.0);",
+        `        straight.${channelSwizzle} = channel;`,
+        "        color.rgb = straight * alpha;",
         "    }",
         "    gl_FragColor = color;",
         "}"
@@ -161,6 +164,18 @@ class UnsandboxedColorsEffects {
   }
 
   _makeOutlineColorChannelEffectInfo(effectName, channelKey) {
+    if (channelKey !== "red") {
+      return {
+        menuName: effectName,
+        showInMenu: false,
+        converter: value => this.Cast.toNumber(value),
+        shapeChanges: false,
+        fragmentUniforms: [
+          `uniform float u_${effectName};`
+        ].join("\n")
+      };
+    }
+
     return {
       menuName: effectName,
       showInMenu: false,
@@ -243,13 +258,22 @@ class UnsandboxedColorsEffects {
         converter: value => this.Cast.toNumber(value),
         shapeChanges: false,
         fragmentUniforms: [
-          `uniform float u_${effectName};`
+          `uniform float u_${effectName};`,
+          `uniform float u_${this.extensionClass.solidChannelEffects.red};`,
+          `uniform float u_${this.extensionClass.solidChannelEffects.green};`,
+          `uniform float u_${this.extensionClass.solidChannelEffects.blue};`
         ].join("\n"),
         fragmentColor: [
           "{",
           `    vec4 color = gl_FragColor;`,
-          `    float amount = clamp(u_${effectName}, -100.0, 100.0) / 100.0;`,
-          `    color.${channelSwizzle} = clamp(color.${channelSwizzle} + amount, 0.0, 1.0);`,
+          `    float hasSolid = step(0.5, u_${this.extensionClass.solidChannelEffects.red}) + step(0.5, u_${this.extensionClass.solidChannelEffects.green}) + step(0.5, u_${this.extensionClass.solidChannelEffects.blue});`,
+          "    if (hasSolid < 0.5) {",
+          "        float alpha = clamp(color.a, 0.0, 1.0);",
+          "        vec3 straight = alpha > epsilon ? (color.rgb / alpha) : vec3(0.0);",
+          `        float amount = clamp(u_${effectName}, -100.0, 100.0) / 100.0;`,
+          `        straight.${channelSwizzle} = clamp(straight.${channelSwizzle} + amount, 0.0, 1.0);`,
+          "        color.rgb = straight * alpha;",
+          "    }",
           "    gl_FragColor = color;",
           "}"
         ].join("\n")
