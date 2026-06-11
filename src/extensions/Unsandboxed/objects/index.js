@@ -297,6 +297,16 @@
               }
             }
           },
+          {
+            opcode: "canParseObject",
+            blockType: Scratch.BlockType.BOOLEAN,
+            text: translate("is [OBJECT] parsable?"),
+            arguments: {
+              OBJECT: {
+                type: Scratch.ArgumentType.STRING,
+              }
+            }
+          },
         ],
         menus: {
           // TODO: translate
