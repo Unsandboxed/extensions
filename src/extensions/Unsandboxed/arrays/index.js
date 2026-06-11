@@ -265,16 +265,6 @@
             },
           },
           {
-            opcode: "canParseArray",
-            blockType: Scratch.BlockType.BOOLEAN,
-            text: translate("is [ARRAY] parsable?"),
-            arguments: {
-              ARRAY: {
-                type: Scratch.ArgumentType.STRING
-              },
-            },
-          },
-          {
             opcode: "repeatArray",
             blockType: Scratch.BlockType.ARRAY,
             text: translate("repeat [ARRAY] [TIMES] times"),
@@ -445,19 +435,6 @@
 
     isValidArray(args) {
       return Array.isArray(args.ARRAY);
-    }
-    
-    canParseArray(args) {
-      if (Array.isArray(value)) return true;
-
-      if (typeof value !== "string") return false;
-
-      try {
-          const parsed = JSON.parse(value);
-          return Array.isArray(parsed);
-          } catch {
-          return false;
-        }
     }
 
     repeatArray(args) {
