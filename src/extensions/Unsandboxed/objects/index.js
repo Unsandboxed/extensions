@@ -297,6 +297,16 @@
               }
             }
           },
+          {
+            opcode: "canParseObject",
+            blockType: Scratch.BlockType.BOOLEAN,
+            text: translate("is [OBJECT] parsable?"),
+            arguments: {
+              OBJECT: {
+                type: Scratch.ArgumentType.STRING,
+              }
+            }
+          },
         ],
         menus: {
           // TODO: translate
@@ -547,6 +557,17 @@
     isValidObject(args) {
       const value = args.OBJECT;
       return value !== null && typeof value === "object" && !Array.isArray(value);
+    }
+
+    canParseObject(value) {
+      if (typeof value === "object" && !Array.isArray(value)) return true;
+      if (typeof value !== "string") return false;
+      try {
+        const parsed = JSON.parse(value);
+        return typeof parsed === "object" && !Array.isArray(parsed);
+      } catch {
+        return false;
+      }
     }
 
     _normalizePathSegment(segment, container) {
