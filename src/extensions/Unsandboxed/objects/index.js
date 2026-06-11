@@ -559,11 +559,12 @@
       return value !== null && typeof value === "object" && !Array.isArray(value);
     }
 
-    canParseObject(value) {
-      if (typeof value === "object" && !Array.isArray(value)) return true;
-      if (typeof value !== "string") return false;
+    canParseObject(args) {
+      const OBJ = args.OBJECT;
+      if (typeof OBJ === "object" && !Array.isArray(OBJ)) return true;
+      if (typeof OBJ !== "string") return false;
       try {
-        const parsed = JSON.parse(value);
+        const parsed = JSON.parse(OBJ);
         return typeof parsed === "object" && !Array.isArray(parsed);
       } catch {
         return false;
