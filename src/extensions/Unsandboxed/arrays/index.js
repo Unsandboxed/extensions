@@ -201,7 +201,7 @@
           {
             opcode: "itemsFromTo",
             blockType: Scratch.BlockType.ARRAY,
-            text: translate("items ([START]) to ([END]) of [ARRAY]"),
+            text: translate("items [START] to [END] of [ARRAY]"),
             arguments: {
               START: {
                 type: Scratch.ArgumentType.NUMBER,
