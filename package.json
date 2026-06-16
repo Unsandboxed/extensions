@@ -30,8 +30,8 @@
     "watch": "^0.13.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.29.0",
-    "@babel/preset-env": "^7.29.2",
+    "@babel/core": "^8.0.0",
+    "@babel/preset-env": "^8.0.0",
     "babel-loader": "^10.1.1",
     "lodash.defaultsdeep": "^4.6.1",
     "webpack": "^5.105.4",
