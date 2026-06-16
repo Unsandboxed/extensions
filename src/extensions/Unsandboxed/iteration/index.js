@@ -80,26 +80,28 @@
 
       this._queueRefresh = this._queueRefresh.bind(this);
 
-      // Keep parameter labels unique for nested loops in the active workspace.
-      Scratch.gui.getBlockly().then(Blockly => {
-        this.blockly = Blockly;
-
-        const workspace = Blockly.getMainWorkspace();
-        if (!workspace) return;
-
-        workspace.addChangeListener(event => {
-          if (this._isUpdatingReporterNames) return;
-
-          if (this._shouldDelayRefresh(event, workspace)) {
-            this._queueRefresh(120);
-            return;
-          }
-
+        // Keep parameter labels unique for nested loops in the active workspace.
+      if (Scratch.gui && Scratch.gui.getBlockly) {
+        Scratch.gui.getBlockly().then(Blockly => {
+          this.blockly = Blockly;
+  
+          const workspace = Blockly.getMainWorkspace();
+          if (!workspace) return;
+  
+          workspace.addChangeListener(event => {
+            if (this._isUpdatingReporterNames) return;
+  
+            if (this._shouldDelayRefresh(event, workspace)) {
+              this._queueRefresh(120);
+              return;
+            }
+  
+            this._queueRefresh();
+          });
+  
           this._queueRefresh();
         });
-
-        this._queueRefresh();
-      });
+      }
     }
 
     _queueRefresh(delayMs = 0) {
