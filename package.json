@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/Unsandboxed/extensions#readme",
   "dependencies": {
-    "express": "^4.22.2",
+    "express": "^5.2.1",
     "file-loader": "^6.2.0",
     "string-replace-loader": "^3.3.0",
     "url-loader": "^4.1.1",
